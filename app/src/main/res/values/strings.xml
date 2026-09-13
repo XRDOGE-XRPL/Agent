@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Autonomer Entwicklungsagent</string>
+    <string name="aufgabe_hint">Aufgabe beschreiben…</string>
+    <string name="verzeichnis_hint">Arbeitsverzeichnis</string>
+    <string name="ollama_hint">Ollama-URL</string>
+    <string name="modell_hint">Modellname</string>
+    <string name="iterationen_hint">Maximale Iterationen</string>
+    <string name="start">Agent starten</string>
+    <string name="ollama_pruefen">Ollama prüfen</string>
+    <string name="protokoll">Protokoll</string>
+    <string name="kern_nicht_geladen">Nativer Kern nicht geladen – JNI-Bibliothek fehlt.</string>
+    <string name="ollama_ok">Ollama ist erreichbar.</string>
+    <string name="ollama_fehler">Ollama ist nicht erreichbar.</string>
+    <string name="aufgabe_fehlt">Bitte eine Aufgabe eingeben.</string>
+    <string name="schleife_startet">Agentenschleife startet…</string>
+</resources>

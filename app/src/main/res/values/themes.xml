@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AutonomerAgent" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/gruen_akzent</item>
+        <item name="colorPrimaryVariant">@color/gruen_akzent</item>
+        <item name="colorOnPrimary">@color/grau_hintergrund</item>
+        <item name="android:statusBarColor">@color/grau_hintergrund</item>
+        <item name="android:windowBackground">@color/grau_hintergrund</item>
+        <item name="android:textColor">@color/text_hell</item>
+    </style>
+</resources>
