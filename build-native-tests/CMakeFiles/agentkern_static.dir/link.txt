@@ -1,0 +1,2 @@
+/usr/bin/ar qc libagentkern_static.a CMakeFiles/agentkern_static.dir/src/protokollierung.cpp.o CMakeFiles/agentkern_static.dir/src/json_werkzeuge.cpp.o CMakeFiles/agentkern_static.dir/src/dateisystem.cpp.o CMakeFiles/agentkern_static.dir/src/http_klient.cpp.o CMakeFiles/agentkern_static.dir/src/protokoll.cpp.o CMakeFiles/agentkern_static.dir/src/git.cpp.o CMakeFiles/agentkern_static.dir/src/build.cpp.o CMakeFiles/agentkern_static.dir/src/ollama.cpp.o CMakeFiles/agentkern_static.dir/src/schleife.cpp.o
+/usr/bin/ranlib libagentkern_static.a

@@ -13,6 +13,14 @@ int main() {
         std::cerr << "unescapen fehlerhaft\n";
         return 1;
     }
+    if (agent::json::string_feld("{\"status\":\"Hallo\\u0021\"}", "status").value_or("") != "Hallo!") {
+        std::cerr << "unicode-escape fehlerhaft\n";
+        return 1;
+    }
+    if (agent::json::string_feld("{\"status\":\"Hallo\\nWelt\"}", "status").value_or("") != "Hallo\nWelt") {
+        std::cerr << "escaped-string fehlerhaft\n";
+        return 1;
+    }
 
     const std::string antwort =
         "Hier JSON:\n{\"schritte\":[{\"aktion\":\"schreiben\",\"pfad\":\"a.txt\","

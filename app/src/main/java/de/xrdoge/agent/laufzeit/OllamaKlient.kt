@@ -72,41 +72,56 @@ class OllamaKlient(
 
         fun jsonStringFeld(json: String, schluessel: String): String? {
             val nadel = "\"$schluessel\""
-            var pos = json.indexOf(nadel)
-            while (pos >= 0) {
-                var nach = pos + nadel.length
-                while (nach < json.length && json[nach].isWhitespace()) nach++
-                if (nach < json.length && json[nach] == ':') {
-                    nach++
-                    while (nach < json.length && json[nach].isWhitespace()) nach++
-                    if (nach >= json.length || json[nach] != '"') return null
-                    nach++
-                    val inhalt = StringBuilder()
-                    var escape = false
-                    while (nach < json.length) {
-                        val c = json[nach]
-                        if (escape) {
-                            inhalt.append(
-                                when (c) {
-                                    'n' -> '\n'
-                                    'r' -> '\r'
-                                    't' -> '\t'
-                                    else -> c
+            var pos = 0
+            while (pos < json.length) {
+                if (json[pos] == '"') {
+                    val start = pos
+                    val end = start + nadel.length
+                    if (end <= json.length && json.substring(start, end) == nadel) {
+                        var nach = end
+                        while (nach < json.length && json[nach].isWhitespace()) nach++
+                        if (nach < json.length && json[nach] == ':') {
+                            nach++
+                            while (nach < json.length && json[nach].isWhitespace()) nach++
+                            if (nach >= json.length || json[nach] != '"') return null
+                            nach++
+                            val inhalt = StringBuilder()
+                            while (nach < json.length) {
+                                val ch = json[nach]
+                                if (ch == '\\') {
+                                    if (nach + 1 >= json.length) return null
+                                    when (val escaped = json[nach + 1]) {
+                                        'b' -> inhalt.append('\b')
+                                        'f' -> inhalt.append('\u000C')
+                                        'n' -> inhalt.append('\n')
+                                        'r' -> inhalt.append('\r')
+                                        't' -> inhalt.append('\t')
+                                        '"' -> inhalt.append('"')
+                                        '\\' -> inhalt.append('\\')
+                                        '/' -> inhalt.append('/')
+                                        'u' -> {
+                                            if (nach + 5 >= json.length) return null
+                                            val hex = json.substring(nach + 2, nach + 6)
+                                            if (!hex.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) return null
+                                            inhalt.append(hex.toInt(16).toChar())
+                                            nach += 4
+                                        }
+                                        else -> inhalt.append(escaped)
+                                    }
+                                    nach += 2
+                                    continue
                                 }
-                            )
-                            escape = false
-                        } else if (c == '\\') {
-                            escape = true
-                        } else if (c == '"') {
-                            return inhalt.toString()
-                        } else {
-                            inhalt.append(c)
+                                if (ch == '"') {
+                                    return inhalt.toString()
+                                }
+                                inhalt.append(ch)
+                                nach++
+                            }
+                            return null
                         }
-                        nach++
                     }
-                    return null
                 }
-                pos = json.indexOf(nadel, pos + 1)
+                pos++
             }
             return null
         }

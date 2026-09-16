@@ -22,4 +22,10 @@ class OllamaKlientTest {
     fun jsonStringFeldFehlt() {
         assertNull(OllamaKlient.jsonStringFeld("{\"done\":true}", "response"))
     }
+
+    @Test
+    fun jsonStringFeldDekodiertUnicodeUndEscape() {
+        val json = "{\"model\":\"llama\",\"response\":\"Ergebnis\\u0021\\nOK\"}"
+        assertEquals("Ergebnis!\nOK", OllamaKlient.jsonStringFeld(json, "response"))
+    }
 }
