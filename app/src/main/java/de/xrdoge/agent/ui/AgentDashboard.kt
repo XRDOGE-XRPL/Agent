@@ -48,10 +48,18 @@ fun AgentDashboard(
     var provider by remember { mutableStateOf("local") }
     var ttlMinutes by remember { mutableStateOf("30") }
     var status by remember { mutableStateOf(initialStatus) }
+    var bootstrapStatus by remember { mutableStateOf("Bootstrap ready") }
     val logs by runtime.logStream.logsFlow.collectAsState(initial = emptyList())
     val route by runtime.executionRouter.lastRoute.collectAsState(initial = null)
     val services by runtime.ephemeralServiceManager.servicesFlow.collectAsState(initial = emptyList())
     var docs by remember { mutableStateOf(emptyList<String>()) }
+
+    val runtimeState = listOf(
+        "Bootstrap: $bootstrapStatus",
+        "Termux: ${if (System.getProperty("os.name")?.contains("android", ignoreCase = true) == true || System.getenv("PREFIX")?.contains("termux", ignoreCase = true) == true) "detected" else "safe-mode"}",
+        "Ollama: ${if (status.contains("Ollama", ignoreCase = true) || status.contains("reachable", ignoreCase = true)) "ready" else "pending"}",
+        "IO: ready"
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -224,6 +232,18 @@ fun AgentDashboard(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
+
+                Card {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("Runtime State", style = MaterialTheme.typography.titleMedium)
+                        runtimeState.forEach { item ->
+                            Text(item)
+                        }
+                    }
+                }
 
                 if (services.isNotEmpty()) {
                     Card {
