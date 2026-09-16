@@ -8,9 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import de.xrdoge.agent.AgentAnwendung
 import de.xrdoge.agent.R
 import de.xrdoge.agent.bruecke.NativeBruecke
-import de.xrdoge.agent.laufzeit.AgentSchleife
+import de.xrdoge.agent.laufzeit.AgentSessionStatus
 import de.xrdoge.agent.laufzeit.OllamaKlient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,7 +20,7 @@ import java.io.File
 
 class HauptAktivitaet : AppCompatActivity() {
     private val adapter = ProtokollAdapter()
-    private val schleife = AgentSchleife()
+    private val runtime by lazy { (application as AgentAnwendung).runtime }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,10 +36,16 @@ class HauptAktivitaet : AppCompatActivity() {
         val pruefenKnopf = findViewById<Button>(R.id.knopfOllama)
         val liste = findViewById<RecyclerView>(R.id.listeProtokoll)
 
-        verzeichnisFeld.setText(File(filesDir, "werkstatt").absolutePath)
+        val workspace = File(filesDir, "werkstatt").absolutePath
+        verzeichnisFeld.setText(workspace)
         ollamaFeld.setText("http://127.0.0.1:11434")
         modellFeld.setText("llama3.2")
         iterationenFeld.setText("8")
+
+        val repoSnapshot = runtime.githubClient.repositorySnapshot(workspace)
+        val initialStatus = "${repoSnapshot.summary()} | Native=${NativeBruecke.geladen}"
+        statusText.text = initialStatus
+        adapter.hinzufuegen(initialStatus)
 
         liste.layoutManager = LinearLayoutManager(this)
         liste.adapter = adapter
@@ -52,7 +59,6 @@ class HauptAktivitaet : AppCompatActivity() {
         } else {
             getString(R.string.kern_nicht_geladen)
         }
-        statusText.text = version
         adapter.hinzufuegen(version)
 
         pruefenKnopf.setOnClickListener {
@@ -77,21 +83,30 @@ class HauptAktivitaet : AppCompatActivity() {
                 statusText.text = getString(R.string.aufgabe_fehlt)
                 return@setOnClickListener
             }
+
             startKnopf.isEnabled = false
             adapter.leeren()
             adapter.hinzufuegen(getString(R.string.schleife_startet))
+
             lifecycleScope.launch {
+                val session = runtime.sessionRegistry.create(workspace, aufgabe)
+                runtime.sessionRegistry.update(session.id, AgentSessionStatus.RUNNING, "Agent session ${session.id.take(8)} is running")
+
                 val ergebnis = withContext(Dispatchers.IO) {
-                    schleife.ausfuehren(
-                        verzeichnisFeld.text.toString(),
-                        aufgabe,
-                        ollamaFeld.text.toString(),
-                        modellFeld.text.toString(),
-                        iterationenFeld.text.toString().toIntOrNull() ?: 8
+                    runtime.executionEngine.execute(
+                        session = session,
+                        arbeitsverzeichnis = workspace,
+                        aufgabe = aufgabe,
+                        ollamaUrl = ollamaFeld.text.toString(),
+                        modell = modellFeld.text.toString(),
+                        maxIterationen = iterationenFeld.text.toString().toIntOrNull() ?: 8
                     )
                 }
-                adapter.hinzufuegen(ergebnis)
-                statusText.text = ergebnis
+
+                val status = runtime.sessionRegistry.list().firstOrNull { it.id == session.id }?.status
+                val finalMessage = if (status == AgentSessionStatus.FAILED) "Session failed" else ergebnis
+                adapter.hinzufuegen(finalMessage)
+                statusText.text = finalMessage
                 startKnopf.isEnabled = true
             }
         }
