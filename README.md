@@ -238,6 +238,7 @@ Die folgenden Dokumente ergänzen die Hauptdoku speziell für verschiedene Zielg
 - `dokumentation/PRODUKTBESCHREIBUNG.md` – Produktbeschreibung für Interessenten und Endkunden
 - `dokumentation/ENTWICKLERHANDBUCH.md` – technische Referenz für Mitentwickler
 - `dokumentation/GITHUB_LANDINGPAGE.md` – kompakte Projektübersicht für GitHub- oder Präsentationsseiten
+- `dokumentation/HOWTO_S24_SETUP.md` – vollständige manuelle Einrichtung für Samsung S24, Termux und Ollama
 
 ## Nächste Schritte
 
@@ -248,6 +249,7 @@ Die folgenden Dokumente ergänzen die Hauptdoku speziell für verschiedene Zielg
 - Produkt- und Marketingübersicht in `dokumentation/PRODUKTBESCHREIBUNG.md`
 - Entwicklerreferenz in `dokumentation/ENTWICKLERHANDBUCH.md`
 - Landing-Page-Text in `dokumentation/GITHUB_LANDINGPAGE.md`
+- Manuelle S24-/Termux-/Ollama-Setup-Anleitung in `dokumentation/HOWTO_S24_SETUP.md`
 
 ## Definition of Done
 
