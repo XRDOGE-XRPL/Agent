@@ -51,9 +51,13 @@ def ausfuehren(verzeichnis: Path, kommando: str) -> tuple[int, str]:
 
 def pfad_sicher(wurzel: Path, ziel: Path) -> bool:
     try:
-        ziel.resolve().relative_to(wurzel.resolve())
-        return True
-    except ValueError:
+        if any(teil == ".." for teil in Path(ziel).parts):
+            return False
+        basis = wurzel.resolve()
+        kandidat = ziel.resolve(strict=False) if ziel.is_absolute() else (basis / ziel).resolve(strict=False)
+        relativ = kandidat.relative_to(basis)
+        return all(teil != ".." for teil in relativ.parts)
+    except (ValueError, RuntimeError):
         return False
 
 
@@ -95,11 +99,14 @@ def schleife(args: argparse.Namespace) -> int:
             f"{SYSTEM_PROMPT}\nIteration: {iteration}\nAufgabe: {args.aufgabe}\n"
             f"Dateien: {dateien[:200]}\nLetzte Fehler:\n{letzte_fehler}\n"
         )
-        try:
-            antwort = ollama_anfragen(args.ollama_url, args.modell, prompt)
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as ex:
-            print(f"[FEHLER] Ollama: {ex}", file=sys.stderr)
-            return 2
+        if args.offline:
+            antwort = '{"schritte":[{"aktion":"git_status","begruendung":"Offline-Modus: keine Ollama-Anfrage; lokale Prüfung wird verwendet."}]}'
+        else:
+            try:
+                antwort = ollama_anfragen(args.ollama_url, args.modell, prompt)
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as ex:
+                print(f"[FEHLER] Ollama: {ex}", file=sys.stderr)
+                return 2
         start = antwort.find("{")
         ende = antwort.rfind("}")
         if start < 0 or ende <= start:
@@ -154,6 +161,7 @@ def main() -> int:
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--modell", default="llama3.2")
     parser.add_argument("--max-iterationen", type=int, default=8)
+    parser.add_argument("--offline", action="store_true", help="skip Ollama requests and operate in local-safe offline mode")
     parser.add_argument("--bootstrap", action="store_true", help="run Termux bootstrap before the agent starts")
     args = parser.parse_args()
     if bootstrap_runtime is not None and (args.bootstrap or "TERMUX_VERSION" in os.environ or "com.termux" in os.environ.get("PREFIX", "")):
