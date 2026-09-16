@@ -12,6 +12,11 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+try:
+    from termux_bootstrap import bootstrap_runtime
+except ImportError:  # pragma: no cover
+    bootstrap_runtime = None
+
 SYSTEM_PROMPT = """Du bist ein autonomer Entwicklungsagent. Antworte AUSSCHLIESSLICH mit JSON.
 Schema:
 {"schritte":[{"aktion":"schreiben|loeschen|lesen|bauen|testen|git_status|fertig|abbrechen",
@@ -149,7 +154,14 @@ def main() -> int:
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--modell", default="llama3.2")
     parser.add_argument("--max-iterationen", type=int, default=8)
-    return schleife(parser.parse_args())
+    parser.add_argument("--bootstrap", action="store_true", help="run Termux bootstrap before the agent starts")
+    args = parser.parse_args()
+    if bootstrap_runtime is not None and (args.bootstrap or "TERMUX_VERSION" in os.environ or "com.termux" in os.environ.get("PREFIX", "")):
+        try:
+            bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.arbeitsverzeichnis, ollama_url=args.ollama_url, model=args.modell, quiet=True)
+        except Exception as ex:
+            print(f"[WARN] Bootstrap konnte nicht vollständig ausgeführt werden: {ex}", file=sys.stderr)
+    return schleife(args)
 
 
 if __name__ == "__main__":
