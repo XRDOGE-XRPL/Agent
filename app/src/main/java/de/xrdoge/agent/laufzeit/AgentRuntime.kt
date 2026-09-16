@@ -10,6 +10,8 @@ class AgentRuntime(
     val logStream = LogStreamManager()
     val socketBridge = LocalSocketBridge(logStream = logStream)
     val localOllamaClient = LocalOllamaClient(bridge = socketBridge, logStream = logStream)
+    val executionRouter = ExecutionRouter()
+    val ephemeralServiceManager = EphemeralServiceManager(logStream = logStream)
     val universalTaskEngine = UniversalTaskEngine(sandboxRoot = sandboxRoot, socketBridge = socketBridge, logStream = logStream)
     val executionEngine = LocalExecutionEngine(logStream = logStream)
     val githubClient = GitHubClient()
