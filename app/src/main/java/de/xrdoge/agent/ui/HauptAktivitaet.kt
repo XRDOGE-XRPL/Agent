@@ -22,6 +22,7 @@ class HauptAktivitaet : AppCompatActivity() {
         val workspace = File(filesDir, "werkstatt").absolutePath
         val repoSnapshot = runtime.githubClient.repositorySnapshot(workspace)
         val initialStatus = "${repoSnapshot.summary()} | Native=${NativeBruecke.geladen}"
+        runtime.logStream.append(initialStatus)
 
         setContent {
             AgentDashboard(

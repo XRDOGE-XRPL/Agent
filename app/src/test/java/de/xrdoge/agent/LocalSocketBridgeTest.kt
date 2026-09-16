@@ -1,24 +1,27 @@
 package de.xrdoge.agent
 
 import de.xrdoge.agent.laufzeit.LocalSocketBridge
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.concurrent.thread
 
 class LocalSocketBridgeTest {
     @Test
-    fun socketBridgeRetriesAndHandlesLocalEcho() {
+    fun socketBridgeRetriesAndHandlesLocalEcho() = runBlocking {
         val bridge = LocalSocketBridge(host = "127.0.0.1", port = 5099, maxRetries = 1, baseDelayMs = 25L)
         val captured = arrayOfNulls<String>(1)
         val server = bridge.startServer { text -> captured[0] = text }
 
-        thread {
-            Thread.sleep(150L)
+        try {
+            Thread.sleep(50L)
             val response = bridge.send("hello-local")
-            assertTrue(response.isNotEmpty() || response.startsWith("socket_error"))
+            assertTrue(response.startsWith("ack:hello-local") || response.startsWith("socket_error"))
+            if (captured[0] != null) {
+                assertEquals("hello-local", captured[0])
+            }
+        } finally {
+            server.close()
         }
-
-        Thread.sleep(200L)
-        server.close()
     }
 }

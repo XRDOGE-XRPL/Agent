@@ -17,55 +17,86 @@ class LocalSocketBridge(
     private val baseDelayMs: Long = 100L
 ) {
     private val lock = Any()
+
     @Volatile
     private var serverSocket: ServerSocket? = null
 
+    @Volatile
+    private var isListening = false
+
     suspend fun send(payload: String): String = withContext(Dispatchers.IO) {
         var attempt = 0
-        while (true) {
+        while (attempt <= maxRetries) {
             try {
-                Socket(host, port).use { socket ->
+                return@withContext Socket(host, port).use { socket ->
+                    socket.soTimeout = 2_000
                     val writer = OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8)
-                    writer.write(payload)
+                    writer.write(payload.trim())
+                    writer.write("\n")
                     writer.flush()
+
                     val reader = BufferedReader(InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))
-                    val response = reader.readLine() ?: ""
-                    return@withContext response
+                    val response = reader.readLine()
+                    if (!response.isNullOrBlank()) {
+                        response
+                    } else {
+                        "socket_ack: ${payload.take(128)}"
+                    }
                 }
-            } catch (_: Exception) {
+            } catch (error: Exception) {
                 if (attempt >= maxRetries) {
-                    return@withContext "socket_error: $payload"
+                    return@withContext "socket_error: ${error.javaClass.simpleName}: ${error.message ?: "unknown"}"
                 }
-                attempt += 1
                 val delay = min(baseDelayMs * (1L shl attempt), 2_000L)
                 Thread.sleep(delay)
+                attempt += 1
             }
         }
+        "socket_error: unavailable"
     }
 
     fun startServer(listener: (String) -> Unit): AutoCloseable = synchronized(lock) {
+        if (isListening) {
+            return@synchronized object : AutoCloseable {
+                override fun close() = stopServer()
+            }
+        }
+
         val socket = ServerSocket(port)
         serverSocket = socket
+        isListening = true
+
         Thread {
-            while (!socket.isClosed) {
+            while (!socket.isClosed && isListening) {
                 try {
                     val accepted = socket.accept()
                     val reader = BufferedReader(InputStreamReader(accepted.getInputStream(), StandardCharsets.UTF_8))
-                    val text = reader.readLine() ?: ""
-                    listener(text)
+                    val payload = reader.readLine() ?: ""
+                    if (payload.isNotBlank()) {
+                        listener(payload)
+                        val writer = OutputStreamWriter(accepted.getOutputStream(), StandardCharsets.UTF_8)
+                        writer.write("ack:${payload}\n")
+                        writer.flush()
+                    }
                     accepted.close()
                 } catch (_: Exception) {
-                    if (socket.isClosed) break
+                    if (socket.isClosed || !isListening) return@Thread
                 }
             }
-        }.apply { isDaemon = true; start() }
-        object : AutoCloseable {
-            override fun close() {
-                synchronized(lock) {
-                    serverSocket?.close()
-                    serverSocket = null
-                }
-            }
+        }.apply {
+            isDaemon = true
+            name = "local-socket-bridge"
+            start()
         }
+
+        object : AutoCloseable {
+            override fun close() = stopServer()
+        }
+    }
+
+    fun stopServer() = synchronized(lock) {
+        isListening = false
+        serverSocket?.close()
+        serverSocket = null
     }
 }

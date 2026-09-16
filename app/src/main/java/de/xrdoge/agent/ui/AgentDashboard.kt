@@ -17,8 +17,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,7 +46,7 @@ fun AgentDashboard(
     var modell by remember { mutableStateOf("llama3.2") }
     var iterationen by remember { mutableStateOf("8") }
     var status by remember { mutableStateOf(initialStatus) }
-    val logs = remember { mutableStateListOf(initialStatus) }
+    val logs by runtime.logStream.logsFlow.collectAsState(initial = emptyList())
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -111,7 +111,7 @@ fun AgentDashboard(
                                     scope.launch {
                                         val ok = withContext(Dispatchers.IO) { onCheckOllama(ollama, modell) }
                                         status = if (ok) "Ollama ist erreichbar." else "Ollama ist nicht erreichbar."
-                                        logs.add(status)
+                                        runtime.logStream.append(status)
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
@@ -122,10 +122,11 @@ fun AgentDashboard(
                                 onClick = {
                                     if (aufgabe.isBlank()) {
                                         status = "Bitte eine Aufgabe eingeben."
-                                        logs.add(status)
+                                        runtime.logStream.append(status)
                                         return@Button
                                     }
                                     scope.launch {
+                                        runtime.logStream.append("Agent start: $aufgabe")
                                         val result = withContext(Dispatchers.IO) {
                                             onRunAgent(
                                                 verzeichnis,
@@ -136,7 +137,7 @@ fun AgentDashboard(
                                             )
                                         }
                                         status = result
-                                        logs.add(result)
+                                        runtime.logStream.append(result)
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
