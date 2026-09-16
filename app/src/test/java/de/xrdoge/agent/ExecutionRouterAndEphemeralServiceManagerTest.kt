@@ -25,6 +25,25 @@ class ExecutionRouterAndEphemeralServiceManagerTest {
     }
 
     @Test
+    fun executionRouterReservesLocalHeadroomForPoolDelegation() {
+        val router = ExecutionRouter()
+        val route = router.route(
+            "Reserve local CPU and GPU headroom while a cloud pool handles the heaviest batch inference",
+            ExecutionRouter.Telemetry(
+                batteryPercent = 85,
+                isOnHomeNetwork = true,
+                networkOnline = true,
+                latencyMs = 90,
+                estimatedComplexity = 8
+            )
+        )
+        assertEquals(ExecutionRouter.Provider.CLOUD_POOL, route.provider)
+        assertTrue(route.reservedCpuPercent in 20..30)
+        assertTrue(route.reservedGpuPercent in 20..30)
+        assertEquals(5, route.treasurySharePercent)
+    }
+
+    @Test
     fun ephemeralServiceManagerProvisionsAndCleansUpOnTtl() = runBlocking {
         val manager = EphemeralServiceManager()
         val service = manager.provision("demo-db", "sqlite", provider = "local", ttlMs = 100L)

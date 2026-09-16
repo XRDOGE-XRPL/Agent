@@ -27,11 +27,44 @@ class LocalSocketBridge(
     @Volatile
     private var isListening = false
 
+    data class ResourceEnvelope(
+        val reservedCpuPercent: Int = 25,
+        val reservedGpuPercent: Int = 25,
+        val isTermuxReady: Boolean = isTermuxEnvironment(),
+        val socketHealthy: Boolean = true
+    )
+
     data class CommandResult(
         val exitCode: Int,
         val output: String,
         val command: String
     )
+
+    @Volatile
+    private var resourceEnvelope = ResourceEnvelope()
+
+    fun currentResourceEnvelope(): ResourceEnvelope = synchronized(lock) { resourceEnvelope.copy() }
+
+    fun reserveLocalCapacity(
+        cpuPercent: Int = 25,
+        gpuPercent: Int = 25,
+        socketHealthy: Boolean = true
+    ): ResourceEnvelope = synchronized(lock) {
+        val normalizedCpu = cpuPercent.coerceIn(20, 30)
+        val normalizedGpu = gpuPercent.coerceIn(20, 30)
+        resourceEnvelope = ResourceEnvelope(
+            reservedCpuPercent = normalizedCpu,
+            reservedGpuPercent = normalizedGpu,
+            isTermuxReady = isTermuxEnvironment(),
+            socketHealthy = socketHealthy
+        )
+        resourceEnvelope.copy()
+    }
+
+    fun isTermuxEnvironment(): Boolean {
+        val termuxDir = File("/data/data/com.termux/files/usr/bin")
+        return termuxDir.exists() || System.getenv("TERMUX_VERSION") != null || System.getenv("ANDROID_RUNTIME_ROOT") != null
+    }
 
     suspend fun send(payload: String): String = withContext(Dispatchers.IO) {
         var attempt = 0
@@ -72,6 +105,14 @@ class LocalSocketBridge(
     ): CommandResult = withContext(Dispatchers.IO) {
         val resolvedDir = workingDirectory.ifBlank { "." }
         val safeDirectory = File(resolvedDir).takeIf { it.exists() && it.isDirectory() } ?: File(".")
+        val activeResourceEnvelope = currentResourceEnvelope()
+        val resourceInfo = if (activeResourceEnvelope.isTermuxReady) {
+            "termux-ready:${activeResourceEnvelope.reservedCpuPercent}%cpu/${activeResourceEnvelope.reservedGpuPercent}%gpu"
+        } else {
+            "host-ready:${activeResourceEnvelope.reservedCpuPercent}%cpu/${activeResourceEnvelope.reservedGpuPercent}%gpu"
+        }
+        onChunk?.invoke("[resource-pool] $resourceInfo")
+        logStream?.append("[resource-pool] $resourceInfo")
         val commandLine = if (isWindows()) listOf("cmd", "/C", command) else listOf("/bin/sh", "-lc", command)
         val process = ProcessBuilder(commandLine)
             .directory(safeDirectory)
