@@ -5,6 +5,8 @@
 - Erweiterung der Dokumentation für README, Architektur, Ausführung und Validierung
 - Detailliertere Beschreibung von Komponenten, Abhängigkeiten, Sicherheitsmodell und Arbeitsabläufen
 - Klarere Hinweise zur lokalen Nutzung, Android-Ausführung, Termux-Anbindung und Teststrategie
+- Ergänzung von Roadmap, Produktbeschreibung, Entwicklerhandbuch und GitHub-Landing-Page-Dokumentation
+- Zusätzliche Zielgruppen-orientierte Projektübersichten für Interessenten, Entwickler und Präsentationen
 
 ## 1.0.0
 

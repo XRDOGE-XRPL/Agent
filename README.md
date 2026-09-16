@@ -230,11 +230,24 @@ Wichtige Prüfungen:
 - `./gradlew :app:testDebugUnitTest`
 - `./gradlew :app:assembleDebug`
 
+## Zusätzliche Dokumentation
+
+Die folgenden Dokumente ergänzen die Hauptdoku speziell für verschiedene Zielgruppen:
+
+- `dokumentation/ROADMAP.md` – Roadmap mit geplanten Features und nächsten Entwicklungsstufen
+- `dokumentation/PRODUKTBESCHREIBUNG.md` – Produktbeschreibung für Interessenten und Endkunden
+- `dokumentation/ENTWICKLERHANDBUCH.md` – technische Referenz für Mitentwickler
+- `dokumentation/GITHUB_LANDINGPAGE.md` – kompakte Projektübersicht für GitHub- oder Präsentationsseiten
+
 ## Nächste Schritte
 
 - Detailliertere Architektur und Funktionsweise im Dokument `dokumentation/ARCHITEKTUR.md`
 - Ausführliche Betriebsanleitung in `dokumentation/AUSFUEHRUNG.md`
 - Validierungs- und Testprotokoll in `dokumentation/VALIDIERUNG.md`
+- Roadmap mit geplanten Erweiterungen in `dokumentation/ROADMAP.md`
+- Produkt- und Marketingübersicht in `dokumentation/PRODUKTBESCHREIBUNG.md`
+- Entwicklerreferenz in `dokumentation/ENTWICKLERHANDBUCH.md`
+- Landing-Page-Text in `dokumentation/GITHUB_LANDINGPAGE.md`
 
 ## Definition of Done
 
