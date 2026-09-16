@@ -115,6 +115,24 @@ std::string escapen(const std::string& roh) {
     return r;
 }
 
+namespace {
+
+bool hex4_zu_codepunkt(const std::string& text, std::size_t start, unsigned int& codepunkt) {
+    if (start + 4 > text.size()) {
+        return false;
+    }
+    const std::string hex = text.substr(start, 4);
+    for (char ch : hex) {
+        if (!std::isxdigit(static_cast<unsigned char>(ch))) {
+            return false;
+        }
+    }
+    codepunkt = static_cast<unsigned int>(std::stoul(hex, nullptr, 16));
+    return true;
+}
+
+}  // namespace
+
 std::string unescapen(const std::string& roh) {
     std::string r;
     r.reserve(roh.size());
@@ -131,55 +149,33 @@ std::string unescapen(const std::string& roh) {
                 case '\\': r += '\\'; break;
                 case '/': r += '/'; break;
                 case 'u': {
-                    if (i + 4 < roh.size()) {
-                        const std::string hex = roh.substr(i + 1, 4);
-                        bool ok = true;
-                        for (char ch : hex) {
-                            if (!std::isxdigit(static_cast<unsigned char>(ch))) {
-                                ok = false;
-                                break;
-                            }
-                        }
-                        if (ok) {
-                            unsigned int codepunkt = static_cast<unsigned int>(std::stoul(hex, nullptr, 16));
-                            if (codepunkt >= 0xD800 && codepunkt <= 0xDBFF) {
-                                if (i + 6 < roh.size() && roh.compare(i + 5, 2, "\\u") == 0) {
-                                    const std::string next_hex = roh.substr(i + 7, 4);
-                                    bool next_ok = true;
-                                    for (char ch : next_hex) {
-                                        if (!std::isxdigit(static_cast<unsigned char>(ch))) {
-                                            next_ok = false;
-                                            break;
-                                        }
-                                    }
-                                    if (next_ok) {
-                                        const unsigned int low = static_cast<unsigned int>(std::stoul(next_hex, nullptr, 16));
-                                        if (low >= 0xDC00 && low <= 0xDFFF) {
-                                            codepunkt = 0x10000 + ((codepunkt - 0xD800) << 10) + (low - 0xDC00);
-                                            i += 6;
-                                            r += utf8_von_codepunkt(codepunkt);
-                                            i += 4;
-                                            break;
-                                        }
-                                    }
-                                }
-                                r += "\xEF\xBF\xBD";
-                                i += 4;
-                                break;
-                            }
-                            if (codepunkt >= 0xDC00 && codepunkt <= 0xDFFF) {
-                                r += "\xEF\xBF\xBD";
-                                i += 4;
-                                break;
-                            }
-                            r += utf8_von_codepunkt(codepunkt);
-                            i += 4;
-                        } else {
-                            r += '?';
-                        }
-                    } else {
+                    unsigned int codepunkt = 0;
+                    if (!hex4_zu_codepunkt(roh, i + 1, codepunkt)) {
                         r += '?';
+                        break;
                     }
+                    if (codepunkt >= 0xD800 && codepunkt <= 0xDBFF) {
+                        if (i + 6 < roh.size() && roh.compare(i + 5, 2, "\\u") == 0) {
+                            unsigned int low = 0;
+                            if (hex4_zu_codepunkt(roh, i + 7, low) && low >= 0xDC00 && low <= 0xDFFF) {
+                                codepunkt = 0x10000 + ((codepunkt - 0xD800) << 10) + (low - 0xDC00);
+                                i += 6;
+                                r += utf8_von_codepunkt(codepunkt);
+                                i += 4;
+                                break;
+                            }
+                        }
+                        r += "\xEF\xBF\xBD";
+                        i += 4;
+                        break;
+                    }
+                    if (codepunkt >= 0xDC00 && codepunkt <= 0xDFFF) {
+                        r += "\xEF\xBF\xBD";
+                        i += 4;
+                        break;
+                    }
+                    r += utf8_von_codepunkt(codepunkt);
+                    i += 4;
                     break;
                 }
                 default:

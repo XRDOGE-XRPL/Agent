@@ -40,4 +40,17 @@ class LocalSocketBridgeTest {
         assertEquals(-1, result.exitCode)
         assertTrue(result.output.contains("timed out"))
     }
+
+    @Test
+    fun socketBridgeRetainsPartialOutputOnTimeout() = runBlocking {
+        val bridge = LocalSocketBridge(host = "127.0.0.1", port = 5102, maxRetries = 0, baseDelayMs = 10L)
+        val result = bridge.executeCommand(
+            "python -c \"import sys,time; sys.stdout.write('partial-output'); sys.stdout.flush(); time.sleep(5)\"",
+            workingDirectory = ".",
+            timeoutMs = 250L
+        )
+        assertEquals(-1, result.exitCode)
+        assertTrue(result.output.contains("partial-output"))
+        assertTrue(result.output.contains("timed out"))
+    }
 }

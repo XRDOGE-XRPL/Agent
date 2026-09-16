@@ -79,20 +79,27 @@ class LocalSocketBridge(
             .start()
 
         val output = StringBuilder()
+        val outputLock = Any()
         val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
         val collector = Thread {
-            reader.use { bufferedReader ->
-                var line: String?
-                while (bufferedReader.readLine().also { line = it } != null) {
-                    val chunk = line.orEmpty().trimEnd()
-                    if (chunk.isNotBlank()) {
-                        synchronized(output) {
-                            output.append(chunk).append('\n')
+            try {
+                reader.use { bufferedReader ->
+                    val buffer = CharArray(4096)
+                    var readCount: Int
+                    while (bufferedReader.read(buffer).also { readCount = it } != -1) {
+                        val chunk = String(buffer, 0, readCount)
+                        val trimmedChunk = chunk.trimEnd()
+                        synchronized(outputLock) {
+                            output.append(chunk)
                         }
-                        onChunk?.invoke(chunk)
-                        logStream?.append("[local-process] $chunk")
+                        if (trimmedChunk.isNotBlank()) {
+                            onChunk?.invoke(trimmedChunk)
+                            logStream?.append("[local-process] $trimmedChunk")
+                        }
                     }
                 }
+            } catch (_: Exception) {
+                // Stream closing during teardown is expected if the process is forcibly terminated.
             }
         }.apply {
             isDaemon = true
@@ -100,14 +107,25 @@ class LocalSocketBridge(
         }
 
         val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+        if (!finished) {
+            process.destroy()
+            if (process.waitFor(250L, TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly()
+            }
+            if (process.isAlive) {
+                process.destroyForcibly()
+            }
+        }
         collector.join(2_000L)
         val exitCode = if (finished) process.exitValue() else -1
         if (!finished) {
-            process.destroyForcibly()
             val timeoutMessage = "[local-process] command timed out after ${timeoutMs}ms: $command"
+            synchronized(outputLock) {
+                output.append(timeoutMessage)
+            }
             onChunk?.invoke(timeoutMessage)
             logStream?.append(timeoutMessage)
-            return@withContext CommandResult(exitCode, output.toString() + timeoutMessage, command)
+            return@withContext CommandResult(exitCode, output.toString(), command)
         }
 
         CommandResult(exitCode, output.toString().trim(), command)
