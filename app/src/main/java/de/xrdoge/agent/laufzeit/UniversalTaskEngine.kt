@@ -42,7 +42,9 @@ class UniversalTaskEngine(
             "telegram-bot" -> "python3 -m py_compile bot.py"
             "pawn-server" -> "printf '%s\\n' 'Pawn project ready: ${project.rootDir.name}'"
             "web-scraper" -> "python3 -m py_compile scraper.py"
+            "async-web-scraper" -> "python3 -m py_compile async_scraper.py"
             "sqlite-service" -> "python3 -m py_compile service.py"
+            "sqlite-cronjob" -> "python3 -m py_compile cronjob.py"
             else -> "python3 -m py_compile service.py"
         }
 
@@ -66,7 +68,9 @@ class UniversalTaskEngine(
         return when {
             normalized.contains("telegram") || normalized.contains("bot") -> "telegram-bot"
             normalized.contains("pawn") || normalized.contains("samp") || normalized.contains("open.mp") -> "pawn-server"
-            normalized.contains("scraper") || normalized.contains("crawler") || normalized.contains("cron") || normalized.contains("web") -> "web-scraper"
+            normalized.contains("async") && (normalized.contains("scraper") || normalized.contains("crawler") || normalized.contains("web")) -> "async-web-scraper"
+            normalized.contains("cron") && (normalized.contains("sqlite") || normalized.contains("database") || normalized.contains("job")) -> "sqlite-cronjob"
+            normalized.contains("scraper") || normalized.contains("crawler") || normalized.contains("web") -> "web-scraper"
             normalized.contains("sqlite") || normalized.contains("database") || normalized.contains("service") -> "sqlite-service"
             else -> "generic-service"
         }
