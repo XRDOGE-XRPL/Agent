@@ -159,17 +159,31 @@ std::string Dateisystem::verbinden(const std::string& basis, const std::string& 
 
 bool Dateisystem::pfad_ist_sicher(const std::string& wurzel, const std::string& ziel) {
     try {
-        const fs::path w = normalisiert(wurzel);
-        const fs::path z = normalisiert(ziel);
-        const auto wtext = w.generic_string();
-        const auto ztext = z.generic_string();
-        if (ztext.size() < wtext.size()) {
+        if (ziel.empty()) {
             return false;
         }
-        if (ztext.compare(0, wtext.size(), wtext) != 0) {
+        const fs::path basis = fs::weakly_canonical(fs::absolute(fs::u8path(wurzel)));
+        const fs::path z = fs::u8path(ziel);
+        for (const auto& teil : z) {
+            if (teil == "..") {
+                return false;
+            }
+        }
+        const fs::path kandidat = z.is_absolute() ? fs::weakly_canonical(z) : fs::weakly_canonical(basis / z);
+        std::error_code ec;
+        const fs::path relativ = fs::relative(kandidat, basis, ec);
+        if (ec) {
             return false;
         }
-        return ztext.size() == wtext.size() || ztext[wtext.size()] == '/';
+        if (relativ.empty() || relativ == ".") {
+            return true;
+        }
+        for (const auto& teil : relativ) {
+            if (teil == "..") {
+                return false;
+            }
+        }
+        return true;
     } catch (...) {
         return false;
     }

@@ -76,7 +76,7 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 ### Erforderlich für lokale Builds
 
 - CMake 3.16+
-- C++17-Compiler
+- C++20-Compiler
 - Git
 - Optional: Android SDK + NDK für App-Builds
 - Optional: Java 17 + Gradle / Android Studio

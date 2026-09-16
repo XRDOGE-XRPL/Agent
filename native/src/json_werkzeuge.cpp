@@ -1,6 +1,7 @@
 #include "agent/json_werkzeuge.h"
 
 #include <cctype>
+#include <iomanip>
 #include <sstream>
 
 namespace agent::json {
@@ -105,7 +106,8 @@ std::string escapen(const std::string& roh) {
             default:
                 if (c < 0x20) {
                     std::ostringstream oss;
-                    oss << "\\u" << std::hex << std::uppercase << static_cast<int>(c);
+                    oss << "\\u" << std::hex << std::uppercase << std::setw(4) << std::setfill('0')
+                        << static_cast<int>(c);
                     r += oss.str();
                 } else {
                     r += static_cast<char>(c);
@@ -131,8 +133,9 @@ std::string unescapen(const std::string& roh) {
                 case '\\': r += '\\'; break;
                 case '/': r += '/'; break;
                 case 'u': {
-                    if (i + 4 < roh.size()) {
-                        std::string hex = roh.substr(i + 1, 4);
+                    const std::size_t start = i + 1;
+                    if (start + 4 <= roh.size()) {
+                        const std::string hex = roh.substr(start, 4);
                         bool ok = true;
                         for (char ch : hex) {
                             if (!std::isxdigit(static_cast<unsigned char>(ch))) {
@@ -141,9 +144,28 @@ std::string unescapen(const std::string& roh) {
                             }
                         }
                         if (ok) {
-                            const unsigned int codepunkt = static_cast<unsigned int>(std::stoul(hex, nullptr, 16));
+                            unsigned int codepunkt = static_cast<unsigned int>(std::stoul(hex, nullptr, 16));
+                            std::size_t cursor = start + 4;
+                            if (codepunkt >= 0xD800 && codepunkt <= 0xDBFF && cursor + 6 <= roh.size() &&
+                                roh[cursor] == '\\' && roh[cursor + 1] == 'u') {
+                                const std::string low_hex = roh.substr(cursor + 2, 4);
+                                bool low_ok = true;
+                                for (char ch : low_hex) {
+                                    if (!std::isxdigit(static_cast<unsigned char>(ch))) {
+                                        low_ok = false;
+                                        break;
+                                    }
+                                }
+                                if (low_ok) {
+                                    const unsigned int low = static_cast<unsigned int>(std::stoul(low_hex, nullptr, 16));
+                                    if (low >= 0xDC00 && low <= 0xDFFF) {
+                                        codepunkt = 0x10000 + ((codepunkt - 0xD800) << 10) + (low - 0xDC00);
+                                        cursor += 6;
+                                    }
+                                }
+                            }
                             r += utf8_von_codepunkt(codepunkt);
-                            i += 4;
+                            i = cursor - 1;
                         } else {
                             r += '?';
                         }

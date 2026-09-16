@@ -31,6 +31,11 @@ int main() {
         std::cerr << "unsicherer Pfad wurde akzeptiert\n";
         return 1;
     }
+    const std::string traversal = "../" + tmp.filename().string() + "/sicher.txt";
+    if (agent::Dateisystem::pfad_ist_sicher(tmp.string(), traversal)) {
+        std::cerr << "Pfad-Traversal wurde akzeptiert\n";
+        return 1;
+    }
     const std::string uebersicht = agent::Dateisystem::uebersicht(tmp.string());
     if (uebersicht.find("notiz.txt") == std::string::npos) {
         std::cerr << "Übersicht unvollständig\n";

@@ -71,6 +71,8 @@ Erwartung:
 - keine NullPointer- oder Konfigurationseffekte
 - App-Module initialisiert und testbar
 
+In der aktuellen Sandbox-Umgebung war der AGP-Download aus `google()`/`mavenCentral()` blockiert; dadurch scheitert der Gradle-Lauf vor dem eigentlichen Teststart an der Plugin-Auflösung. Die App-Logik selbst ist aber auf AGP 8.7.3 + Gradle 8.9 konfiguriert und mit den vorhandenen Projektdateien kompatibel.
+
 ### Debug-APK
 
 ```bash
@@ -82,6 +84,8 @@ Erwartung:
 - APK wird im Output-Ordner erzeugt
 - native Bibliotheken gebunden
 - App-Build funktioniert mit `compileSdk 35` und NDK 27.1.12297006
+
+Der direkte Debug-Build ist in der Sandbox derzeit nur eingeschränkt ausführbar, weil der Android-Plugin-Resolver im Ausführungskontext keine Verbindung zur Google-Maven-Repository-URL herstellen konnte.
 
 ## 5. Laufwerk-Validierung
 
