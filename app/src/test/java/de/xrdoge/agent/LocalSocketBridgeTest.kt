@@ -26,8 +26,12 @@ class LocalSocketBridgeTest {
     }
 
     @Test
-    fun socketBridgeExecutesLocalCommandAndStreamsOutput() = runBlocking {
+    fun socketBridgeTracksPoolHeadroomAndExecutesLocalCommand() = runBlocking {
         val bridge = LocalSocketBridge(host = "127.0.0.1", port = 5100, maxRetries = 0, baseDelayMs = 10L)
+        val resourceEnvelope = bridge.reserveLocalCapacity(cpuPercent = 25, gpuPercent = 25)
+        assertTrue(resourceEnvelope.reservedCpuPercent in 20..30)
+        assertTrue(resourceEnvelope.reservedGpuPercent in 20..30)
+
         val result = bridge.executeCommand("printf 'hello-local\n'", workingDirectory = ".")
         assertEquals(0, result.exitCode)
         assertTrue(result.output.contains("hello-local"))
