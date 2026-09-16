@@ -70,6 +70,44 @@ class OllamaKlient(
             return builder.toString()
         }
 
+        private fun jsonUnescape(roh: String): String {
+            val out = StringBuilder()
+            var pos = 0
+            while (pos < roh.length) {
+                if (roh[pos] == '\\' && pos + 1 < roh.length) {
+                    when (val escaped = roh[pos + 1]) {
+                        'b' -> out.append('\b')
+                        'f' -> out.append('\u000C')
+                        'n' -> out.append('\n')
+                        'r' -> out.append('\r')
+                        't' -> out.append('\t')
+                        '"' -> out.append('"')
+                        '\\' -> out.append('\\')
+                        '/' -> out.append('/')
+                        'u' -> {
+                            if (pos + 5 < roh.length) {
+                                val hex = roh.substring(pos + 2, pos + 6)
+                                if (hex.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
+                                    out.append(hex.toInt(16).toChar())
+                                    pos += 4
+                                } else {
+                                    out.append('u')
+                                }
+                            } else {
+                                out.append('u')
+                            }
+                        }
+                        else -> out.append(escaped)
+                    }
+                    pos += 2
+                    continue
+                }
+                out.append(roh[pos])
+                pos++
+            }
+            return out.toString()
+        }
+
         fun jsonStringFeld(json: String, schluessel: String): String? {
             val nadel = "\"$schluessel\""
             var pos = 0
@@ -89,35 +127,46 @@ class OllamaKlient(
                             while (nach < json.length) {
                                 val ch = json[nach]
                                 if (ch == '\\') {
-                                    if (nach + 1 >= json.length) return null
-                                    when (val escaped = json[nach + 1]) {
-                                        'b' -> inhalt.append('\b')
-                                        'f' -> inhalt.append('\u000C')
-                                        'n' -> inhalt.append('\n')
-                                        'r' -> inhalt.append('\r')
-                                        't' -> inhalt.append('\t')
-                                        '"' -> inhalt.append('"')
-                                        '\\' -> inhalt.append('\\')
-                                        '/' -> inhalt.append('/')
-                                        'u' -> {
-                                            if (nach + 5 >= json.length) return null
-                                            val hex = json.substring(nach + 2, nach + 6)
-                                            if (!hex.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) return null
-                                            inhalt.append(hex.toInt(16).toChar())
-                                            nach += 4
-                                        }
-                                        else -> inhalt.append(escaped)
+                                    if (nach + 1 >= json.length) {
+                                        inhalt.append('\\')
+                                        break
                                     }
-                                    nach += 2
-                                    continue
+                                    when (val escaped = json[nach + 1]) {
+                                        'b', 'f', 'n', 'r', 't', '"', '\\', '/' -> {
+                                            inhalt.append('\\')
+                                            inhalt.append(escaped)
+                                            nach += 2
+                                            continue
+                                        }
+                                        'u' -> {
+                                            if (nach + 5 < json.length) {
+                                                val hex = json.substring(nach + 2, nach + 6)
+                                                if (hex.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
+                                                    inhalt.append('\\')
+                                                    inhalt.append('u')
+                                                    inhalt.append(hex)
+                                                    nach += 6
+                                                    continue
+                                                }
+                                            }
+                                            inhalt.append('u')
+                                            nach += 2
+                                            continue
+                                        }
+                                        else -> {
+                                            inhalt.append(escaped)
+                                            nach += 2
+                                            continue
+                                        }
+                                    }
                                 }
                                 if (ch == '"') {
-                                    return inhalt.toString()
+                                    return jsonUnescape(inhalt.toString())
                                 }
                                 inhalt.append(ch)
                                 nach++
                             }
-                            return null
+                            return jsonUnescape(inhalt.toString())
                         }
                     }
                 }

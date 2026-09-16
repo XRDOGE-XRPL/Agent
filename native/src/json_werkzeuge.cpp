@@ -176,22 +176,62 @@ std::optional<std::string> string_feld(const std::string& json, const std::strin
     }
     ++pos;
     std::string roh;
-    bool escape = false;
     for (; pos < json.size(); ++pos) {
         const char c = json[pos];
-        if (escape) {
-            roh.push_back('\\');
-            roh.push_back(c);
-            escape = false;
-        } else if (c == '\\') {
-            escape = true;
-        } else if (c == '"') {
-            return unescapen(roh);
-        } else {
-            roh.push_back(c);
+        if (c == '\\') {
+            if (pos + 1 >= json.size()) {
+                roh.push_back('\\');
+                break;
+            }
+            const char n = json[pos + 1];
+            switch (n) {
+                case 'b':
+                case 'f':
+                case 'n':
+                case 'r':
+                case 't':
+                case '"':
+                case '\\':
+                case '/':
+                    roh.push_back('\\');
+                    roh.push_back(n);
+                    ++pos;
+                    break;
+                case 'u': {
+                    if (pos + 5 < json.size()) {
+                        const std::string hex = json.substr(pos + 2, 4);
+                        bool ok = true;
+                        for (char ch : hex) {
+                            if (!std::isxdigit(static_cast<unsigned char>(ch))) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        if (ok) {
+                            roh.push_back('\\');
+                            roh.push_back('u');
+                            roh.append(hex);
+                            pos += 5;
+                            break;
+                        }
+                    }
+                    roh.push_back('u');
+                    ++pos;
+                    break;
+                }
+                default:
+                    roh.push_back(n);
+                    ++pos;
+                    break;
+            }
+            continue;
         }
+        if (c == '"') {
+            return unescapen(roh);
+        }
+        roh.push_back(c);
     }
-    return std::nullopt;
+    return unescapen(roh);
 }
 
 std::optional<int> int_feld(const std::string& json, const std::string& schluessel) {

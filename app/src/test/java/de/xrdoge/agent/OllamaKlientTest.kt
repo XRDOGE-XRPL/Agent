@@ -28,4 +28,10 @@ class OllamaKlientTest {
         val json = "{\"model\":\"llama\",\"response\":\"Ergebnis\\u0021\\nOK\"}"
         assertEquals("Ergebnis!\nOK", OllamaKlient.jsonStringFeld(json, "response"))
     }
+
+    @Test
+    fun jsonStringFeldToleriertMalformedesEscape() {
+        val json = "{\"model\":\"llama\",\"response\":\"Hallo\\xWelt\"}"
+        assertEquals("HalloxWelt", OllamaKlient.jsonStringFeld(json, "response"))
+    }
 }

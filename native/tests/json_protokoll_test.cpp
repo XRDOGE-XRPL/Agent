@@ -21,6 +21,10 @@ int main() {
         std::cerr << "escaped-string fehlerhaft\n";
         return 1;
     }
+    if (agent::json::string_feld("{\"status\":\"Hallo\\xWelt\"}", "status").value_or("") != "HalloxWelt") {
+        std::cerr << "malformed-escape fehlerhaft\n";
+        return 1;
+    }
 
     const std::string antwort =
         "Hier JSON:\n{\"schritte\":[{\"aktion\":\"schreiben\",\"pfad\":\"a.txt\","
