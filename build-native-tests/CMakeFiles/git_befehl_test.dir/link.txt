@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/git_befehl_test.dir/link.d CMakeFiles/git_befehl_test.dir/tests/git_befehl_test.cpp.o -o git_befehl_test  libagentkern_static.a

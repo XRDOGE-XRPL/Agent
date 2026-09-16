@@ -32,4 +32,12 @@ class LocalSocketBridgeTest {
         assertEquals(0, result.exitCode)
         assertTrue(result.output.contains("hello-local"))
     }
+
+    @Test
+    fun socketBridgeHonorsTimeoutOnLongRunningCommand() = runBlocking {
+        val bridge = LocalSocketBridge(host = "127.0.0.1", port = 5101, maxRetries = 0, baseDelayMs = 10L)
+        val result = bridge.executeCommand("python -c \"import time; time.sleep(5)\"", workingDirectory = ".", timeoutMs = 250L)
+        assertEquals(-1, result.exitCode)
+        assertTrue(result.output.contains("timed out"))
+    }
 }

@@ -17,6 +17,10 @@ int main() {
         std::cerr << "unicode-escape fehlerhaft\n";
         return 1;
     }
+    if (agent::json::unescapen("A\\uD83D\\uDE00B") != "A😀B") {
+        std::cerr << "surrogate-pair fehlerhaft\n";
+        return 1;
+    }
     if (agent::json::string_feld("{\"status\":\"Hallo\\nWelt\"}", "status").value_or("") != "Hallo\nWelt") {
         std::cerr << "escaped-string fehlerhaft\n";
         return 1;

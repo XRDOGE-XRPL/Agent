@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/dateisystem_test.dir/link.d CMakeFiles/dateisystem_test.dir/tests/dateisystem_test.cpp.o -o dateisystem_test  libagentkern_static.a

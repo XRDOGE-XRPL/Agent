@@ -11,6 +11,7 @@ captures/
 *.ap_
 *.aab
 build-native/
+build-native-tests/
 build-lokal/
 .DS_Store
 __pycache__/

@@ -78,19 +78,29 @@ class LocalSocketBridge(
             .redirectErrorStream(true)
             .start()
 
-        val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
         val output = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            val chunk = line.orEmpty().trimEnd()
-            if (chunk.isNotBlank()) {
-                output.append(chunk).append('\n')
-                onChunk?.invoke(chunk)
-                logStream?.append("[local-process] $chunk")
+        val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
+        val collector = Thread {
+            reader.use { bufferedReader ->
+                var line: String?
+                while (bufferedReader.readLine().also { line = it } != null) {
+                    val chunk = line.orEmpty().trimEnd()
+                    if (chunk.isNotBlank()) {
+                        synchronized(output) {
+                            output.append(chunk).append('\n')
+                        }
+                        onChunk?.invoke(chunk)
+                        logStream?.append("[local-process] $chunk")
+                    }
+                }
             }
+        }.apply {
+            isDaemon = true
+            start()
         }
 
         val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+        collector.join(2_000L)
         val exitCode = if (finished) process.exitValue() else -1
         if (!finished) {
             process.destroyForcibly()

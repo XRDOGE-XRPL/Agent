@@ -85,5 +85,5 @@ class EphemeralServiceManager(
         }
     }
 
-    fun list(): List<ManagedService> = services.values.toList()
+    fun list(): List<ManagedService> = _servicesFlow.value
 }

@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/agentenlauf.dir/link.d CMakeFiles/agentenlauf.dir/cli/haupteinstieg.cpp.o -o agentenlauf  libagentkern_static.a

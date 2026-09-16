@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/json_protokoll_test.dir/link.d CMakeFiles/json_protokoll_test.dir/tests/json_protokoll_test.cpp.o -o json_protokoll_test  libagentkern_static.a
