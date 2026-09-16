@@ -76,7 +76,9 @@ fun AgentDashboard(
     var docs by remember { mutableStateOf(emptyMap<String, String>()) }
 
     LaunchedEffect(workspace) {
-        docs = loadWorkspaceDocs(File(workspace))
+        docs = withContext(Dispatchers.IO) {
+            loadWorkspaceDocs(File(workspace))
+        }
     }
 
     val runtimeState = listOf(
@@ -335,7 +337,7 @@ fun AgentDashboard(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(docs.toList()) { (title, content) ->
+                            items(docs.toList().sortedBy { it.first }) { (title, content) ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
