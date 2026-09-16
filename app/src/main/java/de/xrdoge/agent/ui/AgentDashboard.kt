@@ -144,6 +144,26 @@ fun AgentDashboard(
                             ) {
                                 Text("Agent starten")
                             }
+                            Button(
+                                onClick = {
+                                    if (aufgabe.isBlank()) {
+                                        status = "Bitte eine Aufgabe eingeben."
+                                        runtime.logStream.append(status)
+                                        return@Button
+                                    }
+                                    scope.launch {
+                                        runtime.logStream.append("Project generation: $aufgabe")
+                                        val result = withContext(Dispatchers.IO) {
+                                            runtime.universalTaskEngine.generateAndValidate(aufgabe)
+                                        }
+                                        status = result
+                                        runtime.logStream.append(result)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Projekt bauen")
+                            }
                         }
                     }
                 }
