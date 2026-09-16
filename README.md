@@ -139,7 +139,13 @@ oder:
 bash skripte/termux_setup.sh
 ```
 
-Der Bootstrap prüft die Umgebung, installiert fehlende Pakete, initialisiert ein lokales Python-Environment im `~/.agent`-Ordner und bereitet die Ollama-/Socket-Umgebung mit einem Safe-Mode-Fallback vor.
+Zusätzlich gibt es einen reinen Health-Check ohne Paketänderungen:
+
+```bash
+python laufwerk/termux_bootstrap.py --healthcheck --json
+```
+
+Der Bootstrap prüft die Umgebung, installiert fehlende Pakete, initialisiert ein lokales Python-Environment im `~/.agent`-Ordner, prüft Ollama/Port-Status und setzt einen automatischen Self-Healing-/Safe-Mode-Fallback, falls kritische Abhängigkeiten fehlen.
 
 ### 2) CLI ausführen
 

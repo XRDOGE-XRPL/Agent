@@ -13,8 +13,11 @@ import json
 import os
 import platform
 import shutil
+import socket
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
@@ -161,6 +164,26 @@ def ensure_runtime_config(path: Path, workspace: str, ollama_url: str, model: st
     return config
 
 
+def check_ollama_port(url: str) -> Dict[str, object]:
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or 11434
+        with socket.create_connection((host, port), timeout=2):
+            pass
+        try:
+            request = urllib.request.Request(url.rstrip("/") + "/api/tags", method="GET", headers={"Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=5) as response:
+                payload = response.read().decode("utf-8", errors="replace")
+                return {"reachable": True, "host": host, "port": port, "status": "ready", "response_preview": payload[:200]}
+        except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+            return {"reachable": True, "host": host, "port": port, "status": "port_open_but_unresponsive", "error": str(exc)}
+    except OSError as exc:
+        return {"reachable": False, "host": "127.0.0.1", "port": 11434, "status": "down", "error": str(exc)}
+
+
 def bootstrap_runtime(
     install_missing: bool = True,
     install_ollama: bool = True,
@@ -192,12 +215,17 @@ def bootstrap_runtime(
         "package_install_attempted": False,
         "packages_missing": [],
         "warnings": [],
+        "health": {"runtime_ready": False, "ollama_ready": False, "python_ready": False, "socket_ready": False},
     }
 
     if not termux_mode:
         report["status"] = "safe-mode"
         report["warnings"].append("Not running in Termux. Runtime stays in safe mode and only local checks are performed.")
         ensure_runtime_config(config_path, workspace, ollama_url, model)
+        report["health"]["runtime_ready"] = True
+        report["health"]["python_ready"] = shutil.which("python3") is not None or shutil.which("python") is not None
+        report["health"]["ollama_ready"] = False
+        report["health"]["socket_ready"] = False
         status_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return report
 
@@ -232,8 +260,22 @@ def bootstrap_runtime(
     report["config"] = config
     report["log_dir"] = str(log_dir)
 
-    if report["status"] == "ready":
+    venv_python = None
+    if runtime_dir.exists():
+        venv_path = runtime_dir / "venv" / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")
+        report["health"]["python_ready"] = venv_path.exists() or shutil.which("python3") is not None or shutil.which("python") is not None
+
+    ollama_state = check_ollama_port(ollama_url)
+    report["health"]["ollama_ready"] = bool(ollama_state.get("reachable"))
+    report["health"]["socket_ready"] = report["health"]["ollama_ready"]
+    report["health"]["runtime_ready"] = bool(report["health"]["python_ready"]) and report["health"]["socket_ready"]
+    report["ollama_probe"] = ollama_state
+
+    if report["health"]["runtime_ready"]:
         report["status"] = "ready"
+    elif report["status"] == "ready":
+        report["status"] = "warning"
+        report["warnings"].append("Runtime was initialized, but a required health check is still not ready.")
 
     status_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -241,6 +283,7 @@ def bootstrap_runtime(
         print(f"[termux-bootstrap] termux={termux_mode} status={report['status']}")
         print(f"[termux-bootstrap] runtime_dir={runtime_dir}")
         print(f"[termux-bootstrap] workspace={workspace}")
+        print(f"[termux-bootstrap] health={json.dumps(report['health'], ensure_ascii=False)}")
         if report["warnings"]:
             for warning in report["warnings"]:
                 print(f"[termux-bootstrap] warning: {warning}")
@@ -257,7 +300,14 @@ def main() -> int:
     parser.add_argument("--model", default="llama3.2", help="default model name")
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
+    parser.add_argument("--healthcheck", action="store_true", help="run the status/health validation without changing the environment")
     args = parser.parse_args()
+
+    if args.healthcheck:
+        report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False))
+        return 0
 
     if args.check and not args.bootstrap:
         report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
@@ -265,7 +315,7 @@ def main() -> int:
             print(json.dumps(report, ensure_ascii=False))
         return 0
 
-    if args.bootstrap or not any((args.check, args.bootstrap)):
+    if args.bootstrap or not any((args.check, args.bootstrap, args.healthcheck)):
         report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
