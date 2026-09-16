@@ -33,7 +33,8 @@ class HauptAktivitaet : AppCompatActivity() {
                     if (NativeBruecke.geladen) {
                         NativeBruecke().pruefeOllama(url)
                     } else {
-                        OllamaKlient(url, model).erreichbar()
+                        val localClient = de.xrdoge.agent.laufzeit.LocalOllamaClient(baseUrl = url, model = model, bridge = runtime.socketBridge, logStream = runtime.logStream)
+                        localClient.reachable()
                     }
                 },
                 onRunAgent = { dir, task, ollamaUrl, model, iterations ->
