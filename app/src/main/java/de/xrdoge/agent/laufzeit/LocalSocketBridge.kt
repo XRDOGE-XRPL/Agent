@@ -78,15 +78,18 @@ class LocalSocketBridge(
             .redirectErrorStream(true)
             .start()
 
-        val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
         val output = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            val chunk = line.orEmpty().trimEnd()
-            if (chunk.isNotBlank()) {
-                output.append(chunk).append('\n')
-                onChunk?.invoke(chunk)
-                logStream?.append("[local-process] $chunk")
+        val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
+        val buffer = CharArray(2048)
+        var charsRead: Int
+
+        while (reader.read(buffer).also { charsRead = it } != -1) {
+            val chunk = String(buffer, 0, charsRead)
+            output.append(chunk)
+            val normalized = chunk.replace("\r", "").trimEnd()
+            if (normalized.isNotBlank()) {
+                onChunk?.invoke(normalized)
+                logStream?.append("[local-process] $normalized")
             }
         }
 
