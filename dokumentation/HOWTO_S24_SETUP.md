@@ -122,7 +122,23 @@ Wenn die Android-Plugin-Resolveren im lokalen Kontext korrekt funktionieren, sol
 - Termux aus dem Store installieren
 - Starten und ein Terminalfenster öffnen
 
-### 4.2 Grundpakete installieren
+### 4.2 Automatischer Bootstrap nutzen
+
+Das Projekt enthält einen eigenen Bootstrap-Layer, der die Termux-Runtime automatisch vorbereitet:
+
+```bash
+python3 laufwerk/termux_bootstrap.py --bootstrap
+```
+
+oder:
+
+```bash
+bash skripte/termux_setup.sh
+```
+
+Der Bootstrap prüft automatisch die Termux-/Android-Umgebung, installiert fehlende Basis-Pakete (`git`, `cmake`, `clang`, `python`, `make`, `curl`, `wget`, `openssl`, `termux-api`, optional `nodejs`/`jq`), erstellt `~/.agent` für Konfiguration und Runtime-Status und prüft die Ollama-/Socket-Umgebung mit Safe-Mode-Fallback.
+
+### 4.3 Grundpakete manuell installieren
 
 ```bash
 pkg update

@@ -125,6 +125,22 @@ oder
 bash skripte/lokal_bauen.sh
 ```
 
+### Termux-Autobootstrap
+
+Auf Termux oder Android/Termux-Umgebungen kann der Laufzeitstack automatisch vorbereitet werden:
+
+```bash
+python laufwerk/termux_bootstrap.py --bootstrap
+```
+
+oder:
+
+```bash
+bash skripte/termux_setup.sh
+```
+
+Der Bootstrap prüft die Umgebung, installiert fehlende Pakete, initialisiert ein lokales Python-Environment im `~/.agent`-Ordner und bereitet die Ollama-/Socket-Umgebung mit einem Safe-Mode-Fallback vor.
+
 ### 2) CLI ausführen
 
 ```text
