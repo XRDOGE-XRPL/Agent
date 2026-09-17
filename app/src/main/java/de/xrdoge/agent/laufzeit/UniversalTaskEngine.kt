@@ -28,11 +28,23 @@ class UniversalTaskEngine(
         val projectType = detectProjectType(normalized)
         val projectId = UUID.randomUUID().toString().take(8)
         val projectDir = File(sandboxRoot, "${projectType}-${projectId}").apply { mkdirs() }
-        val writtenFiles = scaffoldProject(projectDir, projectType, normalized)
-        val project = GeneratedProject(projectId, projectType, normalized, projectDir, writtenFiles)
+        generateIntoDirectory(normalized, projectDir, projectType)
+    }
+
+    fun generateIntoDirectory(taskDescription: String, targetDir: File): GeneratedProject = synchronized(lock) {
+        val normalized = taskDescription.trim().ifBlank { "Generic automation project" }
+        val projectType = detectProjectType(normalized)
+        generateIntoDirectory(normalized, targetDir, projectType)
+    }
+
+    private fun generateIntoDirectory(taskDescription: String, targetDir: File, projectType: String): GeneratedProject {
+        targetDir.mkdirs()
+        val writtenFiles = scaffoldProject(targetDir, projectType, taskDescription)
+        val projectId = UUID.randomUUID().toString().take(8)
+        val project = GeneratedProject(projectId, projectType, taskDescription, targetDir, writtenFiles)
         lastProject = project
-        logStream?.append("[sandbox] created $projectType project in ${projectDir.absolutePath}")
-        writeDocumentationSuite(projectDir, projectType, normalized)
+        logStream?.append("[workspace] created $projectType project in ${targetDir.absolutePath}")
+        writeDocumentationSuite(targetDir, projectType, taskDescription)
         project
     }
 

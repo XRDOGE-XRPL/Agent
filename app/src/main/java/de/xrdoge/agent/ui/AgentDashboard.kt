@@ -224,16 +224,17 @@ fun AgentDashboard(
                                         }
                                         scope.launch {
                                             runtime.logStream.append("Project generation: $aufgabe")
+                                            val targetDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
                                             val result = withContext(Dispatchers.IO) {
+                                                runtime.universalTaskEngine.generateIntoDirectory(aufgabe, targetDir)
                                                 runtime.universalTaskEngine.generateAndValidate(aufgabe)
                                             }
                                             status = result
                                             runtime.logStream.append(result)
+                                            docs = loadWorkspaceDocs(targetDir)
                                             val projectRoot = runtime.universalTaskEngine.lastProject?.rootDir
-                                            docs = if (projectRoot != null) {
-                                                loadWorkspaceDocs(projectRoot)
-                                            } else {
-                                                emptyMap()
+                                            if (projectRoot != null && projectRoot.absolutePath != targetDir.absolutePath) {
+                                                docs = loadWorkspaceDocs(projectRoot)
                                             }
                                         }
                                     },
