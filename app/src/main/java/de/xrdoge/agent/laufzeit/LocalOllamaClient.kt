@@ -40,7 +40,7 @@ class LocalOllamaClient(
         }
 
         logStream?.append("[ollama] requesting model=$model")
-        bridge.send("ollama:${normalizedUrl}|$model|${prompt.take(256)}")
+        bridge.send("ollama:${normalizedUrl}|${OllamaKlient.jsonEscape(model)}|${prompt.take(256)}")
 
         val connection = URL(normalizedUrl + "/api/generate").openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
