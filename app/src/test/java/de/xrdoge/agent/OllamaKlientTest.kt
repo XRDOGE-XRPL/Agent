@@ -34,4 +34,10 @@ class OllamaKlientTest {
         val json = "{\"model\":\"llama\",\"response\":\"\\uD83D\"}"
         assertEquals("\uFFFD", OllamaKlient.jsonStringFeld(json, "response"))
     }
+
+    @Test
+    fun jsonStringFeldErsetztDefekteUnicodeHexSequenz() {
+        val json = "{\"model\":\"llama\",\"response\":\"A\\uZZZZB\"}"
+        assertEquals("A\uFFFDB", OllamaKlient.jsonStringFeld(json, "response"))
+    }
 }

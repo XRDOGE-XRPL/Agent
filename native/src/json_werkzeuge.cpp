@@ -176,6 +176,9 @@ std::string unescapen(const std::string& roh) {
                             i = cursor - 1;
                         } else {
                             r += utf8_von_codepunkt(0xFFFD);
+                            if (start + 4 <= roh.size()) {
+                                i = start + 4 - 1;
+                            }
                         }
                     } else {
                         r += utf8_von_codepunkt(0xFFFD);
