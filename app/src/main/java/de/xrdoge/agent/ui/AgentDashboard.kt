@@ -226,8 +226,7 @@ fun AgentDashboard(
                                             runtime.logStream.append("Project generation: $aufgabe")
                                             val targetDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
                                             val result = withContext(Dispatchers.IO) {
-                                                runtime.universalTaskEngine.generateIntoDirectory(aufgabe, targetDir)
-                                                runtime.universalTaskEngine.generateAndValidate(aufgabe)
+                                                runtime.universalTaskEngine.generateAndValidate(aufgabe, targetDir)
                                             }
                                             status = result
                                             runtime.logStream.append(result)

@@ -48,8 +48,12 @@ class UniversalTaskEngine(
         project
     }
 
-    suspend fun generateAndValidate(taskDescription: String): String {
-        val project = generate(taskDescription)
+    suspend fun generateAndValidate(taskDescription: String, targetDir: File? = null): String {
+        val project = if (targetDir != null) {
+            generateIntoDirectory(taskDescription, targetDir)
+        } else {
+            generate(taskDescription)
+        }
         val validationCommand = when (project.type) {
             "telegram-bot" -> "python3 -m py_compile bot.py"
             "pawn-server" -> "printf '%s\\n' 'Pawn project ready: ${project.rootDir.name}'"
