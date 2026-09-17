@@ -55,16 +55,53 @@ class OllamaKlient(
     }
 
     companion object {
+        private fun isHexDigit(ch: Char): Boolean = ch.isDigit() || ch.lowercaseChar() in 'a'..'f' || ch.lowercaseChar() in 'A'..'F'
+
+        private fun decodeUnicodeHex(json: String, startIndex: Int): Pair<String, Int>? {
+            if (startIndex + 4 > json.length) return null
+            val hex = json.substring(startIndex, startIndex + 4)
+            if (!hex.all(::isHexDigit)) return null
+
+            var codepoint = hex.toInt(16)
+            var cursor = startIndex + 4
+
+            if (codepoint in 0xD800..0xDBFF && cursor + 6 <= json.length && json[cursor] == '\\' && json[cursor + 1] == 'u') {
+                val lowHex = json.substring(cursor + 2, cursor + 6)
+                if (lowHex.all(::isHexDigit)) {
+                    val lowCodepoint = lowHex.toInt(16)
+                    if (lowCodepoint in 0xDC00..0xDFFF) {
+                        codepoint = 0x10000 + ((codepoint - 0xD800) shl 10) + (lowCodepoint - 0xDC00)
+                        cursor += 6
+                    }
+                }
+            }
+
+            if (codepoint in 0xD800..0xDFFF) {
+                return "\uFFFD" to cursor
+            }
+            if (codepoint < 0 || codepoint > 0x10FFFF) {
+                return "\uFFFD" to cursor
+            }
+            return String(Character.toChars(codepoint)) to cursor
+        }
+
         fun jsonEscape(roh: String): String {
             val builder = StringBuilder()
             for (zeichen in roh) {
                 when (zeichen) {
                     '\\' -> builder.append("\\\\")
                     '"' -> builder.append("\\\"")
+                    '\b' -> builder.append("\\b")
+                    '\u000C' -> builder.append("\\f")
                     '\n' -> builder.append("\\n")
                     '\r' -> builder.append("\\r")
                     '\t' -> builder.append("\\t")
-                    else -> builder.append(zeichen)
+                    else -> if (zeichen.code < 0x20) {
+                        builder.append("\\u")
+                        builder.append(zeichen.code.toString(16).padStart(4, '0'))
+                    } else {
+                        builder.append(zeichen)
+                    }
                 }
             }
             return builder.toString()
@@ -88,34 +125,41 @@ class OllamaKlient(
                             val inhalt = StringBuilder()
                             while (nach < json.length) {
                                 val ch = json[nach]
-                                if (ch == '\\') {
-                                    if (nach + 1 >= json.length) return null
-                                    when (val escaped = json[nach + 1]) {
-                                        'b' -> inhalt.append('\b')
-                                        'f' -> inhalt.append('\u000C')
-                                        'n' -> inhalt.append('\n')
-                                        'r' -> inhalt.append('\r')
-                                        't' -> inhalt.append('\t')
-                                        '"' -> inhalt.append('"')
-                                        '\\' -> inhalt.append('\\')
-                                        '/' -> inhalt.append('/')
-                                        'u' -> {
-                                            if (nach + 5 >= json.length) return null
-                                            val hex = json.substring(nach + 2, nach + 6)
-                                            if (!hex.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) return null
-                                            inhalt.append(hex.toInt(16).toChar())
-                                            nach += 4
+                                when {
+                                    ch == '\\' -> {
+                                        if (nach + 1 >= json.length) return null
+                                        when (val escaped = json[nach + 1]) {
+                                            'b' -> inhalt.append('\b').also { nach += 2 }
+                                            'f' -> inhalt.append('\u000C').also { nach += 2 }
+                                            'n' -> inhalt.append('\n').also { nach += 2 }
+                                            'r' -> inhalt.append('\r').also { nach += 2 }
+                                            't' -> inhalt.append('\t').also { nach += 2 }
+                                            '"' -> inhalt.append('"').also { nach += 2 }
+                                            '\\' -> inhalt.append('\\').also { nach += 2 }
+                                            '/' -> inhalt.append('/').also { nach += 2 }
+                                            'u' -> {
+                                                val decoded = decodeUnicodeHex(json, nach + 2)
+                                                if (decoded == null) {
+                                                    inhalt.append('?')
+                                                    nach += 2
+                                                } else {
+                                                    val (value, nextIndex) = decoded
+                                                    inhalt.append(value)
+                                                    nach = nextIndex
+                                                }
+                                            }
+                                            else -> {
+                                                inhalt.append(escaped)
+                                                nach += 2
+                                            }
                                         }
-                                        else -> inhalt.append(escaped)
                                     }
-                                    nach += 2
-                                    continue
+                                    ch == '"' -> return inhalt.toString()
+                                    else -> {
+                                        inhalt.append(ch)
+                                        nach++
+                                    }
                                 }
-                                if (ch == '"') {
-                                    return inhalt.toString()
-                                }
-                                inhalt.append(ch)
-                                nach++
                             }
                             return null
                         }
