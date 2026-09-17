@@ -24,8 +24,18 @@ class TerminalFragment : Fragment(R.layout.fragment_terminal) {
                 return@setOnClickListener
             }
             val service = TerminalExecService(workspaceRoot)
-            val output = service.execute(command)
-            console.text = output
+            Thread {
+                val output = StringBuilder()
+                val result = service.execute(command) { chunk ->
+                    output.append(chunk).append('\n')
+                    requireActivity().runOnUiThread {
+                        console.text = output.toString().trimEnd()
+                    }
+                }
+                requireActivity().runOnUiThread {
+                    console.text = result
+                }
+            }.start()
         }
 
         view.findViewById<Button>(R.id.terminalClearButton).setOnClickListener {
@@ -35,6 +45,7 @@ class TerminalFragment : Fragment(R.layout.fragment_terminal) {
         view.findViewById<Button>(R.id.terminalExportButton).setOnClickListener {
             val lines = console.text.toString().split("\n")
             WorkspaceService.exportLog(workspaceRoot, "terminal_exec.log", lines)
+            WorkspaceService.appendAgentLog(workspaceRoot, "Terminal export requested")
             console.text = "${console.text}\n[terminal] log exported to ${File(workspaceRoot, "logs/terminal_exec.log").absolutePath}"
         }
     }

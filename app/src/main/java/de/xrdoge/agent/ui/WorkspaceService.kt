@@ -1,15 +1,93 @@
 package de.xrdoge.agent.ui
 
+import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object WorkspaceService {
+    private const val STATE_FILE = "state.json"
+    private const val MANIFEST_FILE = "manifest.json"
+    private const val MEMORY_FILE = "memory.json"
+
     fun ensureWorkspaceDirectories(workspaceRoot: File): File {
         workspaceRoot.mkdirs()
         File(workspaceRoot, "src").mkdirs()
         File(workspaceRoot, "logs").mkdirs()
         File(workspaceRoot, "appbuilder").mkdirs()
         File(workspaceRoot, "build").mkdirs()
+        ensureProjectMetadata(workspaceRoot)
         return workspaceRoot
+    }
+
+    fun ensureProjectMetadata(root: File) {
+        val manifestFile = File(root, MANIFEST_FILE)
+        if (!manifestFile.exists()) {
+            val manifest = JSONObject().apply {
+                put("workspace", root.absolutePath)
+                put("createdAt", System.currentTimeMillis())
+                put("requiredDirs", listOf("src", "logs", "appbuilder", "build"))
+                put("status", "initialized")
+            }
+            manifestFile.writeText(manifest.toString(2), Charsets.UTF_8)
+        }
+
+        val stateFile = File(root, STATE_FILE)
+        if (!stateFile.exists()) {
+            val state = JSONObject().apply {
+                put("workspace", root.absolutePath)
+                put("agentStatus", "ready")
+                put("lastUpdated", System.currentTimeMillis())
+                put("provider", "local")
+                put("model", "llama3.2")
+                put("iterations", 8)
+                put("ttlMinutes", 30)
+            }
+            stateFile.writeText(state.toString(2), Charsets.UTF_8)
+        }
+
+        val memoryFile = File(root, MEMORY_FILE)
+        if (!memoryFile.exists()) {
+            memoryFile.writeText("", Charsets.UTF_8)
+        }
+
+        val changelogFile = File(root, "CHANGELOG.md")
+        if (!changelogFile.exists()) {
+            changelogFile.writeText(
+                "# Changelog\n\n## Initial workspace\n- Initialized workspace metadata, logs, and app UI shell.\n",
+                Charsets.UTF_8
+            )
+        }
+    }
+
+    fun updateState(root: File, updates: Map<String, Any?>) {
+        val stateFile = File(root, STATE_FILE)
+        val state = if (stateFile.exists()) JSONObject(stateFile.readText(Charsets.UTF_8)) else JSONObject()
+        updates.forEach { (key, value) ->
+            if (value == null) state.remove(key) else state.put(key, value)
+        }
+        state.put("lastUpdated", System.currentTimeMillis())
+        stateFile.writeText(state.toString(2), Charsets.UTF_8)
+        appendAgentLog(root, "State updated: ${state.toString(2)}")
+    }
+
+    fun appendAgentLog(root: File, message: String) {
+        ensureWorkspaceDirectories(root)
+        val logDir = File(root, "logs")
+        logDir.mkdirs()
+        val logFile = File(logDir, "agent.log")
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+        val line = "[$timestamp] $message"
+        logFile.appendText("$line\n", Charsets.UTF_8)
+    }
+
+    fun appendChangeLog(root: File, message: String) {
+        ensureWorkspaceDirectories(root)
+        val changeLog = File(root, "CHANGELOG.md")
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+        val entry = "\n## ${timestamp}\n- $message\n"
+        changeLog.appendText(entry, Charsets.UTF_8)
     }
 
     fun listProjectTree(root: File): List<String> {
@@ -51,7 +129,7 @@ object WorkspaceService {
     }
 
     fun loadMemoryMap(root: File): Map<String, String> {
-        val file = File(root, "memory.json")
+        val file = File(root, MEMORY_FILE)
         if (!file.exists()) return emptyMap()
         return try {
             file.readText(Charsets.UTF_8)
@@ -67,7 +145,7 @@ object WorkspaceService {
     }
 
     fun saveMemoryMap(root: File, entries: Map<String, String>) {
-        val file = File(root, "memory.json")
+        val file = File(root, MEMORY_FILE)
         val content = entries.entries.sortedBy { it.key.lowercase() }
             .joinToString(separator = "\n") { "${it.key}=${it.value}" }
         file.writeText(content.ifBlank { "" }, Charsets.UTF_8)

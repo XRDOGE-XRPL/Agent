@@ -28,6 +28,8 @@ class MemoryFragment : Fragment(R.layout.fragment_memory) {
                 val updated = WorkspaceService.loadMemoryMap(workspaceRoot).toMutableMap()
                 updated.remove(entry.key)
                 WorkspaceService.saveMemoryMap(workspaceRoot, updated)
+                WorkspaceService.appendAgentLog(workspaceRoot, "Memory deleted: ${entry.key}")
+                WorkspaceService.updateState(workspaceRoot, mapOf("memoryEntries" to updated.keys.size))
                 refresh()
             }
         }
@@ -39,6 +41,9 @@ class MemoryFragment : Fragment(R.layout.fragment_memory) {
             val updated = WorkspaceService.loadMemoryMap(workspaceRoot).toMutableMap()
             updated[key] = value
             WorkspaceService.saveMemoryMap(workspaceRoot, updated)
+            WorkspaceService.appendAgentLog(workspaceRoot, "Memory saved: $key=$value")
+            WorkspaceService.updateState(workspaceRoot, mapOf("memoryEntries" to updated.keys.size))
+            WorkspaceService.appendChangeLog(workspaceRoot, "Memory updated: $key")
             keyField.setText("")
             valueField.setText("")
             refresh()
@@ -50,6 +55,9 @@ class MemoryFragment : Fragment(R.layout.fragment_memory) {
             val updated = WorkspaceService.loadMemoryMap(workspaceRoot).toMutableMap()
             updated.remove(key)
             WorkspaceService.saveMemoryMap(workspaceRoot, updated)
+            WorkspaceService.appendAgentLog(workspaceRoot, "Memory deleted: $key")
+            WorkspaceService.updateState(workspaceRoot, mapOf("memoryEntries" to updated.keys.size))
+            WorkspaceService.appendChangeLog(workspaceRoot, "Memory removed: $key")
             keyField.setText("")
             valueField.setText("")
             refresh()

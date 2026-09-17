@@ -1,0 +1,7 @@
+system=initialized
+workspace=/werkstatt
+status=ready
+provider=local
+model=llama3.2
+iterations=8
+ttlMinutes=30

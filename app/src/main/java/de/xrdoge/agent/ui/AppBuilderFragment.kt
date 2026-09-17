@@ -18,17 +18,27 @@ class AppBuilderFragment : Fragment(R.layout.fragment_app_builder) {
         val workspaceRoot = File(requireContext().filesDir, "werkstatt")
         WorkspaceService.ensureWorkspaceDirectories(workspaceRoot)
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = FileTreeAdapter(WorkspaceService.listBuildArtifacts(workspaceRoot).toMutableList()) { item ->
-            status.text = "Artefakt: $item"
+        fun refreshArtifacts() {
+            val items = WorkspaceService.listBuildArtifacts(workspaceRoot).toMutableList()
+            recyclerView.layoutManager = LinearLayoutManager(requireContext())
+            recyclerView.adapter = FileTreeAdapter(items) { item ->
+                status.text = "Artefakt: $item"
+            }
         }
+
+        refreshArtifacts()
 
         view.findViewById<Button>(R.id.appBuilderRunButton).setOnClickListener {
             val service = AppBuilderService(workspaceRoot)
-            status.text = service.runBuild("workspace build")
-            recyclerView.adapter = FileTreeAdapter(WorkspaceService.listBuildArtifacts(workspaceRoot).toMutableList()) { item ->
-                status.text = "Artefakt: $item"
-            }
+            Thread {
+                val result = service.runBuild("workspace build") { message ->
+                    requireActivity().runOnUiThread { status.text = message }
+                }
+                requireActivity().runOnUiThread {
+                    status.text = result
+                    refreshArtifacts()
+                }
+            }.start()
         }
     }
 }
