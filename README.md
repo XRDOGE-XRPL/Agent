@@ -6,7 +6,7 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 
 - Lokale C++-CLI-Ausführung auf Windows, Linux und Termux
 - Android-Integration mit Kotlin/Compose und native C++-Komponenten
-- Offline- und Online-Modus mit optionalem lokalen LLM-Backend
+- Proot-Debian-Stack mit fester Ollama-LLM-Integration im gleichen Userland
 
 ## Kernfunktionen
 
@@ -85,22 +85,22 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 - CMake 3.16+
 - C++20-Compiler
 - Git
-- Optional: Android SDK + NDK für App-Builds
-- Optional: Java 17 + Gradle / Android Studio
-- Optional: Ollama mit lokalem Modell für echte LLM-Aktivierung
+- Java 21 und Gradle in der Proot-Debian-Umgebung
+- Android SDK + NDK unter `/opt/android-sdk`
+- Ollama als fester Bestandteil der Proot-Umgebung
 
 ### Erforderlich für Android
 
-- Android SDK
+- Android SDK unter `/opt/android-sdk`
 - Android NDK 27.1.12297006
-- Compile SDK 35
-- Kotlin/Compose Plug-ins und Android Gradle Plugin
+- Compile SDK 34 / Build-Tools 34.0.0
+- Kotlin/Compose Plug-ins und Android Gradle Plugin 8.7.3
 
-### Optional
+### Proot-Debian-Standard
 
-- Ollama auf `http://127.0.0.1:11434` oder einer erreichbaren lokalen Adresse
-- Modell wie `llama3.2`
-- Termux auf Android-Geräten
+- Ollama läuft im selben Debian-Proot-Userland auf `http://127.0.0.1:11434`
+- Modell wie `llama3.2` wird automatisch oder manuell geladen
+- Termux dient nur als Host-/Launcher-Schicht; die eigentliche Projekt- und Build-Logik läuft in Proot
 
 ## Schnellstart
 
@@ -172,20 +172,20 @@ agentenlauf --arbeitsverzeichnis /home/user/projekt --aufgabe "Füge eine kleine
 `local.properties` mit dem SDK-Pfad ergänzen:
 
 ```properties
-sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Danach:
 
 ```bash
-./gradlew :app:assembleDebug
+./build_apk.sh
 ./gradlew :app:testDebugUnitTest
 ```
 
 oder
 
 ```bash
-gradle :app:assembleDebug :app:testDebugUnitTest
+./gradlew clean assembleDebug --no-daemon --stacktrace
 ```
 
 ## Funktionsweise der Agentenschleife
@@ -257,7 +257,7 @@ Wichtige Prüfungen:
 - `cmake --build build-native`
 - `ctest --test-dir build-native --output-on-failure`
 - `./gradlew :app:testDebugUnitTest`
-- `./gradlew :app:assembleDebug`
+- `./build_apk.sh`
 
 ## Zusätzliche Dokumentation
 
@@ -300,3 +300,43 @@ Ein sinnvoller Abschluss des Projekts ist erreicht, wenn:
 3. Debug-APK erzeugt werden kann
 4. Die Dokumentation die reale Architektur, Nutzung und Risiken beschreibt
 5. Der Agent in Online- und Offline-Modus stabil arbeitet
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+
+
+
+## Proot-Debian-Workflow
+
+Der Android-App-Build darf ausschließlich in einer isolierten Proot-Debian-Userland-Umgebung laufen. Der Termux-Host selbst bleibt für den APK-Build nicht nutzbar, weil Bionic-C- und Perfetto-JNI-Restriktionen zu SIGABRT/Gradle-Lifecycle-Abbrüchen führen.
+
+```bash
+apt-get update
+apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates cmake
+curl -fsSL https://ollama.com/install.sh | sh
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
+ollama pull llama3.2
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+cmake.dir=/usr
+EOF
+export PATH="/usr/bin:$PATH"
+export CMAKE_COMMAND=/usr/bin/cmake
+./build_apk.sh
+```
+
+Erforderliche SDK-Komponenten: `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`, `ndk;27.1.12297006`.
+Ollama ist im Proot-Debian-Userland zwingend aktiv und nicht optional.
+Das System-CMake aus Debian muss vor dem SDK-CMake bevorzugt werden, weil das von `sdkmanager` geladene CMake-Paket unter `/opt/android-sdk/cmake/...` für ARM64-Proot x86_64-binär ist und sonst `No such file or directory` verursacht.

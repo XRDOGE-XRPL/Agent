@@ -78,7 +78,7 @@ In der aktuellen Sandbox-Umgebung war der AGP-Download aus `google()`/`mavenCent
 ### Debug-APK
 
 ```bash
-./gradlew :app:assembleDebug
+./build_apk.sh
 ```
 
 Erwartung:
@@ -170,3 +170,18 @@ Der aktuelle Projektzustand ist als deploybarer Debug-Build mit erfolgreich vali
 ## 10. Qualitätsfazit
 
 Die Kombination aus native C++-Validierung und Android-Grundlagen schafft eine solide Basis für weitere Erweiterungen. Die Dokumentation und die Teststrategie decken dabei die wichtigsten Ablaufpfade ab und machen die Architektur, den Betrieb und die Sicherheitsmaßnahmen für Entwickler nachvollziehbar.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

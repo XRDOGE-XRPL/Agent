@@ -34,7 +34,7 @@ Wichtige Punkte:
 
 ```bash
 ./gradlew :app:testDebugUnitTest
-./gradlew :app:assembleDebug
+./build_apk.sh
 ```
 
 Wichtige Punkte:
@@ -197,3 +197,18 @@ Diese Kombination aus parserrobuster JSON-Behandlung, klarer Dispatch-Logik und 
 ## 10. Fazit
 
 Das Projekt ist als modulare Agentenarchitektur gedacht. Die wichtigsten Erweiterungspunkte liegen im nativen Kern, in der Sicherheit, in der LLM-Integration und in der Android-/Termux-Ausführung. Wer diese Strukturen nachvollzieht, kann das System gezielt erweitern, ohne die Kernprinzipien zu verletzen.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

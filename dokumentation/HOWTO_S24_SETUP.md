@@ -89,19 +89,19 @@ adb devices
 Im Projektstamm:
 
 ```properties
-sdk.dir=/Pfad/zum/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Beispiel:
 
 ```properties
-sdk.dir=C\:/Users/Max/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Auf Linux/macOS:
 
 ```properties
-sdk.dir=/home/benutzer/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 ### 3.3 Projekt aufbauen
@@ -109,7 +109,7 @@ sdk.dir=/home/benutzer/Android/Sdk
 Im Repository:
 
 ```bash
-./gradlew :app:assembleDebug
+./build_apk.sh
 ./gradlew :app:testDebugUnitTest
 ```
 
@@ -136,7 +136,7 @@ oder:
 bash skripte/termux_setup.sh
 ```
 
-Der Bootstrap prüft automatisch die Termux-/Android-Umgebung, installiert fehlende Basis-Pakete (`git`, `cmake`, `clang`, `python`, `make`, `curl`, `wget`, `openssl`, `termux-api`, optional `nodejs`/`jq`), erstellt `~/.agent` für Konfiguration und Runtime-Status und prüft die Ollama-/Socket-Umgebung mit Safe-Mode-Fallback.
+Der Bootstrap prüft automatisch die Termux-/Android-Umgebung, installiert fehlende Basis-Pakete (`git`, `cmake`, `clang`, `python`, `make`, `curl`, `wget`, `openssl`, `termux-api`, `nodejs`, `jq`), erstellt `~/.agent` für Konfiguration und Runtime-Status, initialisiert die Proot-Debian-Umgebung und startet Ollama dort als festen Bestandteil des Laufzeitstacks.
 
 ### 4.3 Grundpakete manuell installieren
 
@@ -145,7 +145,7 @@ pkg update
 pkg install git curl cmake clang python make openssh
 ```
 
-Optional sinnvoll:
+Empfohlen für die Proot-Umgebung:
 
 ```bash
 pkg install nodejs-lts wget vim
@@ -165,12 +165,13 @@ Es gibt zwei praktische Wege:
 1. Offizielle Ollama-Installation auf dem Android-Gerät
 2. Lokaler Ollama-Server im Termux-Container, sofern die lokale Runtime dafür unterstützt wird
 
-### 5.1 Installationspfad A: Ollama-Installer
+### 5.1 Installationspfad A: Ollama im Proot-Debian
 
-Wenn der Offizielle Ollama-Installer für Android/Termux verfügbar ist:
+Dort, wo das Projekt wirklich ausgeführt wird, muss Ollama im Proot-Debian-Userland laufen:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
 ```
 
 Danach prüfen:
@@ -382,7 +383,7 @@ Prüfen:
 
 ```bash
 ./gradlew --version
-./gradlew :app:assembleDebug --stacktrace
+./build_apk.sh
 ```
 
 Wichtige Punkte:
@@ -436,3 +437,18 @@ Diesen Prüfungen sollte vor jedem realen Produktionseinsatz ein vollständiger 
 ## 13. Fazit
 
 Die echte S24- und Termux-Integration nutzt die vorhandenen Bestandteile des Projekts in einer realen Mobilumgebung: Android-App, lokale Shell-/Process-Ausführung, Ollama-Inferenz, lokaler Socket-Pfad und dokumentationsbasierte UI. Wenn die nachstehende Checkliste sauber durchlaufen wird, ist der Agent in einem echten Gerät-Kontext vollständig nutzbar.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

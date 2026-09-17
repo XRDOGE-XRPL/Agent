@@ -141,3 +141,18 @@ Dadurch bleibt der Agent in eingeschränkten mobilen Umgebungen stabil, selbst w
 ## Fazit
 
 Der Bootstrap ist die zentrale Brücke zwischen einer manuellen Installation und einer echten “Termux-first”-Automation. Sobald das Tool auf Termux erkannt wird, versucht es automatisch den kompletten Runtime-Stack zu präparieren und bleibt dabei durch Safe-Mode-Mechaniken robust.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+
