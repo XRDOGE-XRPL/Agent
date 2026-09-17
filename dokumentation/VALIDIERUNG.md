@@ -49,6 +49,8 @@ Typische Prüfungen:
 
 Diese Tests validieren das Dateisystem, die JSON-Verarbeitung, Git-Interaktion, URL- und HTTP-Handling sowie die Agentenschleife mit einem Mock-LLM.
 
+Seit der Erweiterung der Aktionspipeline wird zusätzlich ein `analysieren`-Schritt im Protokoll validiert. Der Testfall prüft, dass `analysieren` als gültige Aktion erkannt wird, pfadgebundene Sicherheitsprüfungen greifen und bei JSON-Escapes/Unicode-Sequenzen keine Parserfehler entstehen.
+
 ### Erfolgsmerkmal
 
 Der gesamte native Build gilt als erfolgreich, wenn:

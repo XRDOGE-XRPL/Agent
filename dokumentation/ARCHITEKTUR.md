@@ -79,8 +79,10 @@ Der Ablauf ist in groben Schritten:
 4. Aufgaben-Kontext aufbauen
 5. Modellantwort als JSON erwarten
 6. JSON in `schritte` zerlegen
-7. Maßnahmen wie Schreiben, Löschen, Bauen, Testen oder Beenden ausführen
+7. Maßnahmen wie Schreiben, Löschen, Analysieren, Bauen, Testen oder Beenden ausführen
 8. Ergebnisse dokumentieren und erneut iterieren, bis Ziel erreicht oder Limit erreicht ist
+
+Zusätzlich unterstützt die Agentenschleife jetzt eine sichere `analysieren`-Aktion: Sie prüft einen relativ gültigen Pfad innerhalb des Workspaces und liest die Datei nur dann, wenn `pfad_ist_sicher` sie als sicher bestätigt. Dadurch können statische Code-Checks, Dateianalysen und Refactoring-Vorprüfungen direkt in die Iterationslogik integriert werden, ohne dass Traversals oder absolute Pfade den Arbeitsbereich verlassen.
 
 Diese Schleife wird durch `max_iterationen` begrenzt und kann im Offline-Modus ohne Ollama arbeiten.
 
