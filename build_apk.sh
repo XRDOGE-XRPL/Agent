@@ -13,6 +13,10 @@ resolve_java_home() {
     /usr/lib/jvm/java-21-openjdk \
     /usr/lib/jvm/java-17-openjdk-amd64 \
     /usr/lib/jvm/java-17-openjdk-arm64 \
+    /usr/lib/jvm/temurin-21-jdk-amd64 \
+    /usr/lib/jvm/temurin-17-jdk-amd64 \
+    /usr/lib/jvm/temurin-21-jdk \
+    /usr/lib/jvm/temurin-17-jdk \
     /usr/lib/jvm/default-java \
     /usr/lib/jvm/default; do
     if [ -x "$candidate/bin/java" ]; then
@@ -35,13 +39,38 @@ resolve_java_home() {
   return 1
 }
 
+resolve_android_home() {
+  if [ -n "${ANDROID_HOME:-}" ] && [ -d "$ANDROID_HOME" ]; then
+    printf '%s\n' "$ANDROID_HOME"
+    return 0
+  fi
+
+  for candidate in \
+    /opt/android-sdk \
+    /usr/local/lib/android/sdk \
+    /usr/lib/android-sdk \
+    /usr/local/share/android-sdk; do
+    if [ -d "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 if [ -n "${PREFIX:-}" ] && echo "$PREFIX" | grep -qi 'termux'; then
   echo "Android builds MUST NOT run directly on the Termux host. Use the Proot Debian bootstrap instead:" >&2
   echo "  python laufwerk/termux_bootstrap.py --bootstrap" >&2
   exit 1
 fi
 
-export ANDROID_HOME=${ANDROID_HOME:-/opt/android-sdk}
+ANDROID_HOME=$(resolve_android_home || true)
+if [ -z "$ANDROID_HOME" ]; then
+  echo "ANDROID_HOME not found. Set ANDROID_HOME or install the Android SDK under /opt/android-sdk or /usr/local/lib/android/sdk." >&2
+  exit 1
+fi
+export ANDROID_HOME
 export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-${ANDROID_HOME}}
 export PATH="/usr/bin:${PATH}"
 export CMAKE_COMMAND=${CMAKE_COMMAND:-/usr/bin/cmake}
@@ -49,7 +78,7 @@ export CMAKE_COMMAND=${CMAKE_COMMAND:-/usr/bin/cmake}
 JAVA_HOME=$(resolve_java_home || true)
 if [ -z "$JAVA_HOME" ]; then
   echo "JAVA_HOME is not set and no supported JDK was found. Install OpenJDK 17/21 and rerun the Android build." >&2
-  echo "Expected locations include /usr/lib/jvm/java-21-openjdk-amd64 or /usr/lib/jvm/default-java." >&2
+  echo "Expected locations include /usr/lib/jvm/java-21-openjdk-amd64, /usr/lib/jvm/temurin-21-jdk-amd64 or /usr/lib/jvm/default-java." >&2
   exit 1
 fi
 export JAVA_HOME
