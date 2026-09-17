@@ -75,6 +75,36 @@ private fun readFileContent(file: File): String = try {
     "[unable to read file: ${file.absolutePath}]"
 }
 
+private fun ensureWorkspaceDirectories(workspaceRoot: File) {
+    workspaceRoot.mkdirs()
+    File(workspaceRoot, "src").mkdirs()
+    File(workspaceRoot, "logs").mkdirs()
+    File(workspaceRoot, "appbuilder").mkdirs()
+    File(workspaceRoot, "build").mkdirs()
+}
+
+private fun loadMemoryMap(root: File): Map<String, String> {
+    val file = File(root, "memory.json")
+    if (!file.exists()) return emptyMap()
+    return try {
+        file.readText(Charsets.UTF_8)
+            .lineSequence()
+            .mapNotNull { line ->
+                val idx = line.indexOf('=')
+                if (idx <= 0) null else line.substring(0, idx).trim() to line.substring(idx + 1).trim()
+            }
+            .toMap()
+    } catch (_: Exception) {
+        emptyMap()
+    }
+}
+
+private fun saveMemoryMap(root: File, entries: Map<String, String>) {
+    val file = File(root, "memory.json")
+    val lines = entries.entries.sortedBy { it.key.lowercase() }.joinToString(separator = "\n") { "${it.key}=${it.value}" }
+    file.writeText(lines.ifBlank { "" }, Charsets.UTF_8)
+}
+
 @Composable
 fun AgentDashboard(
     runtime: AgentRuntime,
@@ -103,18 +133,27 @@ fun AgentDashboard(
     var projectTree by remember { mutableStateOf(listOf<String>()) }
     var selectedFileContent by remember { mutableStateOf<String?>(null) }
     var selectedFilePath by remember { mutableStateOf<String?>(null) }
+    var buildStatus by remember { mutableStateOf("Build ready") }
+    var memoryEntries by remember { mutableStateOf(emptyMap<String, String>()) }
+    var memoryKey by remember { mutableStateOf("") }
+    var memoryValue by remember { mutableStateOf("") }
 
     LaunchedEffect(workspace) {
+        val workspaceDir = File(workspace)
+        ensureWorkspaceDirectories(workspaceDir)
         docs = withContext(Dispatchers.IO) {
-            loadWorkspaceDocs(File(workspace))
+            loadWorkspaceDocs(workspaceDir)
         }
-        val workspaceDir = File(workspace).apply { mkdirs() }
+        memoryEntries = withContext(Dispatchers.IO) { loadMemoryMap(workspaceDir) }
         projectTree = withContext(Dispatchers.IO) { listProjectTree(workspaceDir) }
     }
 
     LaunchedEffect(verzeichnis) {
-        val root = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+        val root = File(verzeichnis.ifBlank { workspace })
+        ensureWorkspaceDirectories(root)
         projectTree = withContext(Dispatchers.IO) { listProjectTree(root) }
+        docs = withContext(Dispatchers.IO) { loadWorkspaceDocs(root) }
+        memoryEntries = withContext(Dispatchers.IO) { loadMemoryMap(root) }
     }
 
     val runtimeState = listOf(
@@ -123,7 +162,7 @@ fun AgentDashboard(
         "Ollama: ${if (status.contains("Ollama", ignoreCase = true) || status.contains("reachable", ignoreCase = true)) "ready" else "pending"}",
         "IO: ready"
     )
-    val tabs = listOf("Dashboard", "Dokumentation", "Terminal", "Dateibaum")
+    val tabs = listOf("Dashboard", "Dokumentation", "Terminal", "Dateibaum", "AppBuilder", "Memory")
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -403,37 +442,61 @@ fun AgentDashboard(
                                 .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Terminal", style = MaterialTheme.typography.titleMedium)
+                            Text("Terminal & Exec", style = MaterialTheme.typography.titleMedium)
                             OutlinedTextField(
                                 value = terminalInput,
                                 onValueChange = { terminalInput = it },
                                 label = { Text("Befehl") },
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (terminalInput.isBlank()) return@Button
+                                        val command = terminalInput.trim()
+                                        val workingDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+                                        scope.launch {
+                                            val result = withContext(Dispatchers.IO) {
+                                                runtime.socketBridge.executeCommand(
+                                                    command = command,
+                                                    workingDirectory = workingDir.absolutePath
+                                                )
+                                            }
+                                            terminalOutput = if (result.output.isBlank()) {
+                                                listOf("[terminal] command finished with exit ${result.exitCode}")
+                                            } else {
+                                                result.output.lines().filter { it.isNotBlank() }
+                                            }
+                                            runtime.logStream.append("[terminal] $command")
+                                            runtime.logStream.append(result.output.ifBlank { "[terminal] command finished with exit ${result.exitCode}" })
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Ausführen")
+                                }
+                                Button(
+                                    onClick = { terminalOutput = emptyList() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Clear Screen")
+                                }
+                            }
                             Button(
                                 onClick = {
-                                    if (terminalInput.isBlank()) return@Button
-                                    val command = terminalInput.trim()
-                                    val workingDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
-                                    scope.launch {
-                                        val result = withContext(Dispatchers.IO) {
-                                            runtime.socketBridge.executeCommand(
-                                                command = command,
-                                                workingDirectory = workingDir.absolutePath
-                                            )
-                                        }
-                                        terminalOutput = if (result.output.isBlank()) {
-                                            listOf("[terminal] command finished with exit ${result.exitCode}")
-                                        } else {
-                                            result.output.lines().filter { it.isNotBlank() }
-                                        }
-                                        runtime.logStream.append("[terminal] $command")
-                                        runtime.logStream.append(result.output.ifBlank { "[terminal] command finished with exit ${result.exitCode}" })
-                                    }
+                                    val root = File(verzeichnis.ifBlank { workspace })
+                                    val logFile = File(root, "logs/terminal_exec.log")
+                                    logFile.parentFile?.mkdirs()
+                                    logFile.writeText(terminalOutput.joinToString(separator = "\n"), Charsets.UTF_8)
+                                    status = "Terminal log exported: ${logFile.absolutePath}"
+                                    runtime.logStream.append(status)
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Ausführen")
+                                Text("Export Logs")
                             }
                             Card(
                                 modifier = Modifier
@@ -456,7 +519,7 @@ fun AgentDashboard(
                             }
                         }
                     }
-                } else {
+                } else if (selectedTab == 3) {
                     Card {
                         Column(
                             modifier = Modifier
@@ -464,7 +527,7 @@ fun AgentDashboard(
                                 .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Projektordner / Dateibaum", style = MaterialTheme.typography.titleMedium)
+                            Text("Dateibaum & Code-Editor", style = MaterialTheme.typography.titleMedium)
                             val treeRoot = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
                             if (projectTree.isEmpty()) {
                                 Text("Keine Dateien im aktuellen Arbeitsverzeichnis gefunden.")
@@ -505,6 +568,128 @@ fun AgentDashboard(
                                             text = selectedFileContent ?: "",
                                             style = MaterialTheme.typography.bodyMedium
                                         )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (selectedTab == 4) {
+                    Card {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text("AppBuilder Pipeline", style = MaterialTheme.typography.titleMedium)
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        val targetDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+                                        buildStatus = "Building in ${targetDir.absolutePath}"
+                                        val result = withContext(Dispatchers.IO) {
+                                            runtime.universalTaskEngine.generateAndValidate(aufgabe.ifBlank { "Build workspace" }, targetDir)
+                                        }
+                                        buildStatus = result
+                                        runtime.logStream.append(result)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Build starten")
+                            }
+                            Text(buildStatus)
+                            val root = File(verzeichnis.ifBlank { workspace }, "build")
+                            val buildFiles = root.walkTopDown().filter { it.isFile }.map { it.relativeTo(root).invariantSeparatorsPath }.toList()
+                            if (buildFiles.isEmpty()) {
+                                Text("Noch keine Artefakte in build/ vorhanden.")
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(buildFiles) { file ->
+                                        Text(file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Card {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text("Memory & Gedächtnis", style = MaterialTheme.typography.titleMedium)
+                            OutlinedTextField(
+                                value = memoryKey,
+                                onValueChange = { memoryKey = it },
+                                label = { Text("Key") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = memoryValue,
+                                onValueChange = { memoryValue = it },
+                                label = { Text("Value") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (memoryKey.isBlank()) return@Button
+                                        val root = File(verzeichnis.ifBlank { workspace })
+                                        val updated = loadMemoryMap(root).toMutableMap()
+                                        updated[memoryKey.trim()] = memoryValue.trim()
+                                        saveMemoryMap(root, updated)
+                                        memoryEntries = updated
+                                        memoryKey = ""
+                                        memoryValue = ""
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Speichern")
+                                }
+                                Button(
+                                    onClick = {
+                                        if (memoryKey.isBlank()) return@Button
+                                        val root = File(verzeichnis.ifBlank { workspace })
+                                        val updated = loadMemoryMap(root).toMutableMap()
+                                        updated.remove(memoryKey.trim())
+                                        saveMemoryMap(root, updated)
+                                        memoryEntries = updated
+                                        memoryKey = ""
+                                        memoryValue = ""
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Löschen")
+                                }
+                            }
+                            if (memoryEntries.isEmpty()) {
+                                Text("Noch keine Memory-Einträge.")
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(memoryEntries.toList().sortedBy { it.first.lowercase() }) { (key, value) ->
+                                        Card {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(key, style = MaterialTheme.typography.titleSmall)
+                                                Text(value)
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -19,7 +19,13 @@ class HauptAktivitaet : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val workspace = File(filesDir, "werkstatt").apply { mkdirs() }.absolutePath
+        val workspaceDir = File(filesDir, "werkstatt")
+        workspaceDir.mkdirs()
+        File(workspaceDir, "src").mkdirs()
+        File(workspaceDir, "logs").mkdirs()
+        File(workspaceDir, "appbuilder").mkdirs()
+        File(workspaceDir, "build").mkdirs()
+        val workspace = workspaceDir.absolutePath
         val repoSnapshot = runtime.githubClient.repositorySnapshot(workspace)
         val initialStatus = "${repoSnapshot.summary()} | Native=${NativeBruecke.geladen}"
         runtime.logStream.append(initialStatus)
