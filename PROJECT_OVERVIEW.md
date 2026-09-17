@@ -53,15 +53,22 @@ mit Unterordnern:
 
 ### Abgedeckt
 - UI-Tabs und Navigation
-- Terminal-Output und Export
-- Dateibaum mit Observer
-- Memory-Write/Delete-Operations
-- State-/Log-Synchronisation
-- Dokumentationssuite
+- Terminal-Output und Export mit asynchronem Stream-Handling
+- rekursiver Dateibaum mit Observer-Lifecycle-Sicherung
+- Memory-CRUD für `memory.json` mit JSON-Validierung
+- State-/Log-Synchronisation inklusive Log-Rotation
+- Dokumentationssuite für alle Markdown-Dateien im Workspace
 
 ### Teilweise/Umgebungsabhängig
 - echte Android-Gradle-Build-Ausführung auf einem SDK-fähigen Host
 - echte Termux/Proot-Debian-Integration auf einem mobilen Host
+
+## Runtime-Sicherheits- und Edge-Case-Härtung
+
+- Workspace-Pfade werden bei Start automatisch initialisiert, inklusive `src/`, `logs/`, `appbuilder/` und `build/`.
+- Fehlende oder beschädigte Metadaten werden mit gültigen Standardwerten wiederhergestellt, ohne UI-Abstürze.
+- `memory.json` wird als JSON-Objekt behandelt, statt als einfache `key=value`-Datei, damit ungültige Inhalte sauber als Validierungsfehler gemeldet werden.
+- Terminal- und Build-Prozesse nutzen `ProcessBuilder` mit Umgebungsvariablen und leiten Laufzeitfehler in den App-Status und Logs weiter.
 
 ## nächsten Schritte
 

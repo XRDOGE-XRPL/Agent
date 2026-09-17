@@ -4,6 +4,8 @@ Das Repository bildet einen autonomen Entwicklungsagenten mit Android-Frontend, 
 
 ## Aktueller Systemstatus
 
+Die aktuelle Stabilisierung umfasst eine harte Initialisierung des Workspace unter `/werkstatt`, robustes JSON-Handling für `memory.json`, logische Schutzmechanismen gegen beschädigte Dateien und fehlende Verzeichnisse sowie einen defensiven Prozess- und UI-Update-Flow für Terminal und Build-Ausführung.
+
 Die App enthält aktuell 6 Tabs:
 - Dashboard
 - Dokumentation

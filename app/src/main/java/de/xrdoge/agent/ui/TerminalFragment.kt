@@ -6,7 +6,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import de.xrdoge.agent.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class TerminalFragment : Fragment(R.layout.fragment_terminal) {
@@ -24,18 +28,16 @@ class TerminalFragment : Fragment(R.layout.fragment_terminal) {
                 return@setOnClickListener
             }
             val service = TerminalExecService(workspaceRoot)
-            Thread {
-                val output = StringBuilder()
-                val result = service.execute(command) { chunk ->
-                    output.append(chunk).append('\n')
-                    requireActivity().runOnUiThread {
-                        console.text = output.toString().trimEnd()
+            val output = StringBuilder()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    service.execute(command) { chunk ->
+                        output.append(chunk).append('\n')
+                        launch(Dispatchers.Main) { console.text = output.toString().trimEnd() }
                     }
                 }
-                requireActivity().runOnUiThread {
-                    console.text = result
-                }
-            }.start()
+                console.text = result
+            }
         }
 
         view.findViewById<Button>(R.id.terminalClearButton).setOnClickListener {

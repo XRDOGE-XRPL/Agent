@@ -12,23 +12,28 @@ object WorkspaceService {
     private const val STATE_FILE = "state.json"
     private const val MANIFEST_FILE = "manifest.json"
     private const val MEMORY_FILE = "memory.json"
+    private const val LOG_ROTATION_LIMIT_BYTES = 1024 * 1024L
 
     fun ensureWorkspaceDirectories(workspaceRoot: File): File {
+        val root = workspaceRoot.absoluteFile
         return try {
-            if (!workspaceRoot.exists()) workspaceRoot.mkdirs()
-            File(workspaceRoot, "src").mkdirs()
-            File(workspaceRoot, "logs").mkdirs()
-            File(workspaceRoot, "appbuilder").mkdirs()
-            File(workspaceRoot, "build").mkdirs()
-            ensureProjectMetadata(workspaceRoot)
-            workspaceRoot
+            if (!root.exists() && !root.mkdirs()) {
+                return root
+            }
+            File(root, "src").mkdirs()
+            File(root, "logs").mkdirs()
+            File(root, "appbuilder").mkdirs()
+            File(root, "build").mkdirs()
+            ensureProjectMetadata(root)
+            root
         } catch (_: SecurityException) {
-            workspaceRoot
+            root
         }
     }
 
     fun ensureProjectMetadata(root: File) {
         try {
+            val logDir = File(root, "logs").apply { mkdirs() }
             val manifestFile = File(root, MANIFEST_FILE)
             if (!manifestFile.exists()) {
                 val manifest = JSONObject().apply {
@@ -56,7 +61,18 @@ object WorkspaceService {
 
             val memoryFile = File(root, MEMORY_FILE)
             if (!memoryFile.exists()) {
-                memoryFile.writeText("", Charsets.UTF_8)
+                memoryFile.writeText("{}", Charsets.UTF_8)
+            } else if (!memoryFile.readText(Charsets.UTF_8).trim().isEmpty()) {
+                val raw = memoryFile.readText(Charsets.UTF_8)
+                if (!raw.trim().startsWith("{") && !raw.trim().startsWith("[")) {
+                    memoryFile.writeText("{}", Charsets.UTF_8)
+                } else {
+                    try {
+                        JSONObject(raw)
+                    } catch (_: Exception) {
+                        memoryFile.writeText("{}", Charsets.UTF_8)
+                    }
+                }
             }
 
             val changelogFile = File(root, "CHANGELOG.md")
@@ -66,10 +82,15 @@ object WorkspaceService {
                     Charsets.UTF_8
                 )
             }
+
+            val agentLog = File(logDir, "agent.log")
+            if (!agentLog.exists()) agentLog.writeText("", Charsets.UTF_8)
+            val terminalLog = File(logDir, "terminal_exec.log")
+            if (!terminalLog.exists()) terminalLog.writeText("", Charsets.UTF_8)
         } catch (_: IOException) {
-            // Fallback: keep the workspace alive even if a metadata file is temporarily unavailable.
+            // The app must continue even if metadata files cannot be written.
         } catch (_: SecurityException) {
-            // Fallback: the app can continue in restricted contexts without crashing.
+            // Restricted contexts must not crash the UI.
         }
     }
 
@@ -97,9 +118,9 @@ object WorkspaceService {
         try {
             val logFile = File(logDir, "agent.log")
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
-            logFile.appendText("[$timestamp] $message\n", Charsets.UTF_8)
+            appendTextWithRotation(logFile, "[$timestamp] $message\n")
         } catch (_: IOException) {
-            // ignore write failures; logging must not crash the UI
+            // Logging must never crash the app.
         }
     }
 
@@ -110,7 +131,7 @@ object WorkspaceService {
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
             changeLog.appendText("\n## ${timestamp}\n- $message\n", Charsets.UTF_8)
         } catch (_: IOException) {
-            // no-op to avoid crash in restricted or read-only sandboxes
+            // Restricted or read-only sandboxes must not crash the app.
         }
     }
 
@@ -118,7 +139,10 @@ object WorkspaceService {
         val observers = mutableListOf<FileObserver>()
         fun attach(dir: File) {
             if (!dir.exists() || !dir.isDirectory) return
-            val observer = object : FileObserver(dir.absolutePath, FileObserver.CREATE or FileObserver.DELETE or FileObserver.MODIFY or FileObserver.MOVED_FROM or FileObserver.MOVED_TO or FileObserver.CLOSE_WRITE) {
+            val observer = object : FileObserver(
+                dir.absolutePath,
+                FileObserver.CREATE or FileObserver.DELETE or FileObserver.MODIFY or FileObserver.MOVED_FROM or FileObserver.MOVED_TO or FileObserver.CLOSE_WRITE
+            ) {
                 override fun onEvent(event: Int, path: String?) {
                     if (event and (FileObserver.CREATE or FileObserver.DELETE or FileObserver.MODIFY or FileObserver.MOVED_FROM or FileObserver.MOVED_TO or FileObserver.CLOSE_WRITE) != 0) {
                         onChange()
@@ -131,6 +155,11 @@ object WorkspaceService {
         }
         attach(root)
         return observers
+    }
+
+    fun stopRecursiveObserver(observers: MutableList<FileObserver>) {
+        observers.forEach { it.stopWatching() }
+        observers.clear()
     }
 
     fun listProjectTree(root: File): List<String> {
@@ -156,36 +185,38 @@ object WorkspaceService {
     }
 
     fun readWorkspaceDocs(projectDir: File): Map<String, String> {
-        val candidates = listOf(
-            "README.md",
-            "ARCHITECTURE.md",
-            "PROJECT_OVERVIEW.md",
-            "CHANGELOG.md",
-            "RELEASE_CHECKLIST.md"
-        )
         val base = ensureWorkspaceDirectories(projectDir)
         if (!base.exists() || !base.isDirectory) return emptyMap()
-        return candidates.mapNotNull { name ->
-            val file = File(base, name)
-            if (file.exists() && file.isFile) name to try { file.readText(Charsets.UTF_8) } catch (_: IOException) { "[unable to read file: ${file.absolutePath}]" } else null
-        }.toMap()
+        return base.walkTopDown()
+            .filter { it.isFile && it.extension.equals("md", ignoreCase = true) }
+            .sortedBy { it.relativeTo(base).invariantSeparatorsPath }
+            .associate { relative ->
+                relative.relativeTo(base).invariantSeparatorsPath to try {
+                    relative.readText(Charsets.UTF_8)
+                } catch (_: IOException) {
+                    "[unable to read file: ${relative.absolutePath}]"
+                }
+            }
     }
 
     fun loadMemoryMap(root: File): Map<String, String> {
         val file = File(root, MEMORY_FILE)
         if (!file.exists()) {
-            file.writeText("", Charsets.UTF_8)
+            file.writeText("{}", Charsets.UTF_8)
             return emptyMap()
         }
         return try {
-            file.readText(Charsets.UTF_8)
-                .lineSequence()
-                .mapNotNull { line ->
-                    val idx = line.indexOf('=')
-                    if (idx <= 0) null else line.substring(0, idx).trim() to line.substring(idx + 1).trim()
+            val raw = file.readText(Charsets.UTF_8).trim()
+            if (raw.isEmpty()) return emptyMap()
+            val json = JSONObject(raw)
+            buildMap {
+                val keys = json.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    put(key, json.getString(key))
                 }
-                .toMap()
-        } catch (_: IOException) {
+            }
+        } catch (_: Exception) {
             emptyMap()
         }
     }
@@ -193,22 +224,24 @@ object WorkspaceService {
     fun saveMemoryMap(root: File, entries: Map<String, String>) {
         val file = File(root, MEMORY_FILE)
         try {
-            val content = entries.entries.sortedBy { it.key.lowercase() }
-                .joinToString(separator = "\n") { "${it.key}=${it.value}" }
-            file.writeText(content.ifBlank { "" }, Charsets.UTF_8)
+            val json = JSONObject()
+            entries.entries.sortedBy { it.key.lowercase() }.forEach { (key, value) -> json.put(key, value) }
+            file.writeText(json.toString(2), Charsets.UTF_8)
         } catch (_: IOException) {
-            // no-op: memory persistence must not crash the runtime
+            // In-memory persistence must never crash the runtime.
         }
     }
 
     fun exportLog(root: File, fileName: String, lines: List<String>) {
-        val targetDir = File(root, "logs")
+        val safeRoot = ensureWorkspaceDirectories(root)
+        val targetDir = File(safeRoot, "logs")
         targetDir.mkdirs()
         val target = File(targetDir, fileName)
         try {
-            target.writeText(lines.joinToString(separator = "\n"), Charsets.UTF_8)
+            val content = lines.joinToString(separator = "\n")
+            appendTextWithRotation(target, if (content.isBlank()) "" else "$content\n")
         } catch (_: IOException) {
-            // ignore log-export write failures
+            // Ignore write failures in restricted environments.
         }
     }
 
@@ -224,5 +257,16 @@ object WorkspaceService {
         } catch (_: SecurityException) {
             emptyList()
         }
+    }
+
+    private fun appendTextWithRotation(file: File, content: String) {
+        val parent = file.parentFile ?: return
+        parent.mkdirs()
+        if (file.exists() && file.length() >= LOG_ROTATION_LIMIT_BYTES) {
+            val rotated = File(parent, file.nameWithoutExtension + ".bak")
+            if (rotated.exists()) rotated.delete()
+            file.renameTo(rotated)
+        }
+        file.appendText(content, Charsets.UTF_8)
     }
 }
