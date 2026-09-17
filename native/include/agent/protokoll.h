@@ -9,6 +9,7 @@ enum class AktionTyp {
     schreiben,
     loeschen,
     lesen,
+    analysieren,
     bauen,
     testen,
     git_status,
