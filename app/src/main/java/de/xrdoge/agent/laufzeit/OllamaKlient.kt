@@ -140,8 +140,9 @@ class OllamaKlient(
                                             'u' -> {
                                                 val decoded = decodeUnicodeHex(json, nach + 2)
                                                 if (decoded == null) {
-                                                    inhalt.append('?')
-                                                    nach += 2
+                                                    inhalt.append('\uFFFD')
+                                                    val fallbackEnd = (nach + 6).coerceAtMost(json.length)
+                                                    nach = fallbackEnd
                                                 } else {
                                                     val (value, nextIndex) = decoded
                                                     inhalt.append(value)

@@ -164,13 +164,19 @@ bool Dateisystem::pfad_ist_sicher(const std::string& wurzel, const std::string& 
         }
         const fs::path basis = fs::weakly_canonical(fs::absolute(fs::u8path(wurzel)));
         const fs::path z = fs::u8path(ziel);
+        if (z.empty()) {
+            return false;
+        }
         for (const auto& teil : z) {
             if (teil == "..") {
                 return false;
             }
         }
-        const fs::path kandidat = z.is_absolute() ? fs::weakly_canonical(z) : fs::weakly_canonical(basis / z);
         std::error_code ec;
+        const fs::path kandidat = z.is_absolute() ? fs::weakly_canonical(z, ec) : fs::weakly_canonical(basis / z, ec);
+        if (ec) {
+            return false;
+        }
         const fs::path relativ = fs::relative(kandidat, basis, ec);
         if (ec) {
             return false;

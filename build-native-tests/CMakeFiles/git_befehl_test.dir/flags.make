@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/runner/work/Agent/Agent/native/include
 
-CXX_FLAGS = -std=gnu++17
+CXX_FLAGS = -std=c++20
 
