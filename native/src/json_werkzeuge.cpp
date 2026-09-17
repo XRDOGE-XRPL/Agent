@@ -186,7 +186,7 @@ std::string unescapen(const std::string& roh) {
                     break;
                 }
                 default:
-                    r += n;
+                    r += utf8_von_codepunkt(0xFFFD);
                     break;
             }
         } else {
@@ -223,6 +223,14 @@ std::optional<std::string> string_feld(const std::string& json, const std::strin
         } else {
             roh.push_back(c);
         }
+    }
+    if (!roh.empty()) {
+        if (roh.back() == '\\') {
+            roh.back() = '\xEF';
+            roh.push_back(static_cast<char>(0xBF));
+            roh.push_back(static_cast<char>(0xBD));
+        }
+        return unescapen(roh);
     }
     return std::nullopt;
 }

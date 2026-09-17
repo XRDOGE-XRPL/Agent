@@ -40,4 +40,16 @@ class OllamaKlientTest {
         val json = "{\"model\":\"llama\",\"response\":\"A\\uZZZZB\"}"
         assertEquals("A\uFFFDB", OllamaKlient.jsonStringFeld(json, "response"))
     }
+
+    @Test
+    fun jsonStringFeldErsetztDefekteEscapeSequenz() {
+        val json = "{\"model\":\"llama\",\"response\":\"A\\xB\"}"
+        assertEquals("A\uFFFDB", OllamaKlient.jsonStringFeld(json, "response"))
+    }
+
+    @Test
+    fun jsonStringFeldAkzeptiertTeilweiseTrunkierteZeichenkette() {
+        val json = "{\"model\":\"llama\",\"response\":\"A"
+        assertEquals("A", OllamaKlient.jsonStringFeld(json, "response"))
+    }
 }
