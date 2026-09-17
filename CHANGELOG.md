@@ -2,15 +2,14 @@
 
 ## 2026-09-17
 
-- Finaler UI-Stand mit 6 Tabs ergänzt: Dashboard, Dokumentation, Terminal, Dateibaum, AppBuilder und Memory.
-- Workspace-Initialisierung für `src/`, `logs/`, `appbuilder/` und `build/` ergänzt.
-- TerminalExecService implementiert mit `ProcessBuilder`, Live-Output und log-file export.
-- FileTreeFragment erweitert mit `FileObserver` für automatische Baum-Refreshes.
-- Memory-CRUD direkt an `memory.json` gebunden.
-- AppBuilderService ergänzt mit Background-Thread und Build-Status-Feedback.
-- `state.json`, `manifest.json`, `memory.json` angelegt bzw. aktualisiert.
-- Dokumentationsdateien `ARCHITECTURE.md` und `PROJECT_OVERVIEW.md` ergänzt.
-- Build-Validierung wiederholt, aber durch AGP-Repository-Problem in der Sandbox blockiert.
+- Finale Audit-Härtung der UI- und Service-Schicht für 6 Tabs, Terminal, Dateibaum, AppBuilder und Memory durchgeführt.
+- `TerminalExecService` gegen leere Stream-Reader, IO-Fehler, Interrupts und Security-Blockaden abgesichert; Ausgaben werden weiter in `logs/terminal_exec.log` geschrieben und in `state.json` synchronisiert.
+- `WorkspaceService` erweitert um defensive Initialisierung, Fallbacks für fehlende Datein und echte `FileObserver`-Registrierung auf dem Workspace-Baum; `FileTreeFragment` nutzt nun einen rekursiven Observer-Mechanismus, der Änderungen im gesamten `/werkstatt/`-Baum triggert.
+- `AppBuilderService` verbessert: Hintergrund-Thread-Run, Pufferung von Build-Output, Status-Callbacks an das UI und robuste Speicherung in `logs/build.log` sowie `state.json`.
+- `MemoryFragment` und `MemoryEntryAdapter` überprüft und stabilisiert: fehlende `memory.json` wird automatisch erzeugt; CRUD-Operationen laufen ohne Crash bei leeren oder beschädigten Dateien weiter.
+- XML-/View-Mapping für alle sechs Fragment-Klassen erneut validiert und keine uninitialisierten IDs identifiziert.
+- Dokumentations- und Repo-Review abgeschlossen; `README.md`, `ARCHITECTURE.md`, `PROJECT_OVERVIEW.md` und `CHANGELOG.md` auf den aktuellen Service- und UI-Stand abgestimmt.
+- Build-Validierung mit `./gradlew assembleDebug` wiederholt; die Sandbox bleibt durch das Android-Plugin-Repository / AGP-Resolver-Problem blockiert, nicht durch Projekt-Logikfehler.
 
 ## 1.0.0
 

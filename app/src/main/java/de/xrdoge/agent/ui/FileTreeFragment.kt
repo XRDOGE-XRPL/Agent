@@ -11,7 +11,7 @@ import de.xrdoge.agent.R
 import java.io.File
 
 class FileTreeFragment : Fragment(R.layout.fragment_file_tree) {
-    private var observer: FileObserver? = null
+    private val observers = mutableListOf<FileObserver>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -34,19 +34,19 @@ class FileTreeFragment : Fragment(R.layout.fragment_file_tree) {
         refreshTree()
         fileContent.text = "Dateinamen anklicken, um Inhalt anzuzeigen."
 
-        observer = object : FileObserver(workspaceRoot.absolutePath) {
-            override fun onEvent(event: Int, path: String?) {
-                requireActivity().runOnUiThread {
-                    refreshTree()
-                }
-            }
-        }
-        observer?.startWatching()
+        stopObservers()
+        observers.addAll(WorkspaceService.startRecursiveObserver(workspaceRoot) {
+            activity?.runOnUiThread { refreshTree() }
+        })
+    }
+
+    private fun stopObservers() {
+        observers.forEach { it.stopWatching() }
+        observers.clear()
     }
 
     override fun onDestroyView() {
-        observer?.stopWatching()
-        observer = null
+        stopObservers()
         super.onDestroyView()
     }
 }

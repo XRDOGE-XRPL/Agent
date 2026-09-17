@@ -20,9 +20,13 @@ class MemoryFragment : Fragment(R.layout.fragment_memory) {
         WorkspaceService.ensureWorkspaceDirectories(workspaceRoot)
 
         fun refresh() {
-            val entries = WorkspaceService.loadMemoryMap(workspaceRoot)
-                .map { (key, value) -> MemoryEntry(key, value) }
-                .sortedBy { it.key.lowercase() }
+            val entries = try {
+                WorkspaceService.loadMemoryMap(workspaceRoot)
+                    .map { (key, value) -> MemoryEntry(key, value) }
+                    .sortedBy { it.key.lowercase() }
+            } catch (_: Exception) {
+                emptyList()
+            }
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.adapter = MemoryEntryAdapter(entries.toMutableList()) { entry ->
                 val updated = WorkspaceService.loadMemoryMap(workspaceRoot).toMutableMap()
