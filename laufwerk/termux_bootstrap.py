@@ -242,7 +242,7 @@ proot-distro login debian --user root -- bash -lc '
   export ANDROID_HOME={sdk_root}
 
   apt-get update
-  apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates
+  apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates cmake
 
   curl -fsSL https://ollama.com/install.sh | sh
   nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
@@ -259,7 +259,9 @@ proot-distro login debian --user root -- bash -lc '
   fi
 
   yes | {sdk_root}/cmdline-tools/latest/bin/sdkmanager --sdk_root={sdk_root} "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.1.12297006"
-  printf "sdk.dir={sdk_root}\\n" > "$REPO_PATH"/local.properties
+  printf "sdk.dir={sdk_root}\\ncmake.dir=/usr\\n" > "$REPO_PATH"/local.properties
+  export PATH="/usr/bin:$PATH"
+  export CMAKE_COMMAND=/usr/bin/cmake
 
   cd "$REPO_PATH"
   ./gradlew clean assembleDebug --no-daemon --stacktrace

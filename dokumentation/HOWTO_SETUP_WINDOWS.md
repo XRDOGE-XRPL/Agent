@@ -126,13 +126,17 @@ Im Projektstamm erzeugen:
 
 ```properties
 sdk.dir=/opt/android-sdk
+cmake.dir=/usr
 ```
 
 Beispiel:
 
 ```properties
 sdk.dir=/opt/android-sdk
+cmake.dir=/usr
 ```
+
+Auf ARM64-Proot-Debian muss das System-CMake aus `/usr/bin/cmake` aktiv genutzt werden. Das SDK-intern geladene CMake-Paket ist x86_64-basiert und führt unter Proot zu `No such file or directory`.
 
 ### 6.2 App-Build und Tests
 

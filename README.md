@@ -323,16 +323,20 @@ Der Android-App-Build darf ausschließlich in einer isolierten Proot-Debian-User
 
 ```bash
 apt-get update
-apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates
+apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates cmake
 curl -fsSL https://ollama.com/install.sh | sh
 nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
 ollama pull llama3.2
 mkdir -p /opt/android-sdk
 cat > local.properties <<'EOF'
 sdk.dir=/opt/android-sdk
+cmake.dir=/usr
 EOF
+export PATH="/usr/bin:$PATH"
+export CMAKE_COMMAND=/usr/bin/cmake
 ./build_apk.sh
 ```
 
 Erforderliche SDK-Komponenten: `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`, `ndk;27.1.12297006`.
 Ollama ist im Proot-Debian-Userland zwingend aktiv und nicht optional.
+Das System-CMake aus Debian muss vor dem SDK-CMake bevorzugt werden, weil das von `sdkmanager` geladene CMake-Paket unter `/opt/android-sdk/cmake/...` für ARM64-Proot x86_64-binär ist und sonst `No such file or directory` verursacht.
