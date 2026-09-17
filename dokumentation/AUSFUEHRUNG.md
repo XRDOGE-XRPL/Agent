@@ -7,15 +7,16 @@ Die folgenden Voraussetzungen variieren je nach Betriebsart:
 ### Für native lokale Ausführung
 
 - CMake 3.16 oder neuer
-- C++17-Compiler
+- C++20-Compiler
 - Git
 - Optional: MinGW oder MSYS2 auf Windows
 - Optional: Python 3 für den Termux-/Local-Runner
 
 ### Für Android-Builds
 
-- Java 17+
+- Java 21 in Proot-Debian (empfohlen)
 - Android SDK
+- Android App target: Java 17 via Gradle/Kotlin JDK-Ausrichtung
 - Android NDK 27.1.12297006
 - Android Gradle Plugin entsprechend der Konfiguration
 
