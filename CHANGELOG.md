@@ -3,7 +3,7 @@
 ## 2026-09-17
 
 - `setup_host.sh` ergänzt: automatisch initialisiert das Android-Termux-Workspace unter `/werkstatt/`, erzeugt `src/`, `logs/`, `appbuilder/` und `build/`, validiert `manifest.json`, `state.json` und `memory.json` und setzt die Laufzeitrechte für Gradle-/Build-Skripte.
-- ARM64-Build-Härtung verankert: `gradle.properties` mit `android.aapt2.daemon.enabled=false` und `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2` sowie natives `app/src/main/jniLibs/arm64-v8a`-Verzeichnis abgesichert.
+- ARM64-Build-Härtung verankert: `gradle.properties` mit `android.aapt2.daemon.enabled=false` und `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2` (Fallback auf `34.0.0`) sowie natives `app/src/main/jniLibs/arm64-v8a`-Verzeichnis abgesichert.
 - README um den direkten Host-Setup- und lokalen ARM64-Build-Workflow erweitert.
 - Finale Audit-Härtung der UI- und Service-Schicht für 6 Tabs, Terminal, Dateibaum, AppBuilder und Memory durchgeführt.
 - `TerminalExecService` gegen leere Stream-Reader, IO-Fehler, Interrupts und Security-Blockaden abgesichert; Ausgaben werden in `logs/terminal_exec.log` mit Rotation geschrieben und in `state.json` synchronisiert.

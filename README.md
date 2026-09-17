@@ -91,7 +91,7 @@ Für den ARM64-/Android-Build gilt der harte Standard:
 Die `gradle.properties` aktivieren dabei dauerhaft:
 
 - `android.aapt2.daemon.enabled=false`
-- `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2`
+- `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2` (Fallback auf `34.0.0`, falls nur diese SDK-Version installiert ist)
 
 Damit werden Build-Abbrüche in restriktiven ARM64-Umgebungen unterdrückt und das native Lib-Verzeichnis `app/src/main/jniLibs/arm64-v8a` sauber eingebunden.
 
