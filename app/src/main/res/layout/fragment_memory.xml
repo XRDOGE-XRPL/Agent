@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/grau_hintergrund"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Memory &amp; Gedächtnis"
+        android:textColor="@color/text_hell"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="12dp" />
+
+    <EditText
+        android:id="@+id/memoryKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Key"
+        android:textColor="@color/text_hell"
+        android:textColorHint="@color/text_gedimmt" />
+
+    <EditText
+        android:id="@+id/memoryValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Value"
+        android:textColor="@color/text_hell"
+        android:textColorHint="@color/text_gedimmt" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/memorySaveButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Speichern" />
+
+        <Button
+            android:id="@+id/memoryDeleteButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Löschen" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/memoryRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp"
+        android:background="@color/grau_karte" />
+</LinearLayout>

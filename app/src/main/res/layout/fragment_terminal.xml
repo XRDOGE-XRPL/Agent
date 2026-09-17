@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/grau_hintergrund"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Terminal &amp; Exec"
+        android:textColor="@color/text_hell"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="12dp" />
+
+    <EditText
+        android:id="@+id/terminalInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Befehl im Pfad /werkstatt/src/"
+        android:textColor="@color/text_hell"
+        android:textColorHint="@color/text_gedimmt" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/terminalRunButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Ausführen" />
+
+        <Button
+            android:id="@+id/terminalClearButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Clear Screen" />
+
+        <Button
+            android:id="@+id/terminalExportButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Export Logs" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/terminalConsole"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp"
+        android:background="@color/grau_karte"
+        android:padding="12dp"
+        android:text="[terminal] ready"
+        android:textColor="@color/text_hell" />
+</LinearLayout>
