@@ -18,7 +18,7 @@ std::string AgentSchleife::system_prompt() {
     return std::string(AGENT_NAME) + " v" + AGENT_VERSION +
            "\nDu bist ein autonomer Entwicklungsagent. Antworte AUSSCHLIESSLICH mit JSON.\n"
            "Schema:\n"
-           "{\"schritte\":[{\"aktion\":\"schreiben|loeschen|lesen|bauen|testen|git_status|fertig|abbrechen\","
+           "{\"schritte\":[{\"aktion\":\"schreiben|loeschen|lesen|analysieren|bauen|testen|git_status|fertig|abbrechen\","
            "\"pfad\":\"relativer/pfad\",\"inhalt\":\"dateiinhalt\",\"begruendung\":\"kurz\"}]}\n"
            "Regeln:\n"
            "- Nur relative Pfade innerhalb des Arbeitsverzeichnisses.\n"
@@ -123,6 +123,30 @@ AgentErgebnis AgentSchleife::ausfuehren() {
                     } else {
                         letzte_fehler_ = fehler;
                     }
+                    break;
+                }
+                case AktionTyp::analysieren: {
+                    const std::string ziel = Dateisystem::verbinden(konfig_.arbeitsverzeichnis, schritt.pfad);
+                    if (!Dateisystem::pfad_ist_sicher(konfig_.arbeitsverzeichnis, ziel)) {
+                        letzte_fehler_ = "Unsicherer Pfad abgelehnt: " + schritt.pfad;
+                        log_.fehler(letzte_fehler_);
+                        break;
+                    }
+                    std::string inhalt, fehler;
+                    if (!Dateisystem::lesen(ziel, inhalt, fehler)) {
+                        letzte_fehler_ = fehler;
+                        log_.fehler(fehler);
+                        break;
+                    }
+                    std::size_t zeilen = 1;
+                    for (char ch : inhalt) {
+                        if (ch == '\n') {
+                            ++zeilen;
+                        }
+                    }
+                    letzte_fehler_.clear();
+                    log_.info("Datei analysiert: " + schritt.pfad + " (" + std::to_string(zeilen) +
+                              " Zeilen, " + std::to_string(inhalt.size()) + " Byte)");
                     break;
                 }
                 case AktionTyp::bauen:

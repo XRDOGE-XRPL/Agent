@@ -79,8 +79,10 @@ Der Ablauf ist in groben Schritten:
 4. Aufgaben-Kontext aufbauen
 5. Modellantwort als JSON erwarten
 6. JSON in `schritte` zerlegen
-7. Maßnahmen wie Schreiben, Löschen, Bauen, Testen oder Beenden ausführen
+7. Maßnahmen wie Schreiben, Löschen, Analysieren, Bauen, Testen oder Beenden ausführen
 8. Ergebnisse dokumentieren und erneut iterieren, bis Ziel erreicht oder Limit erreicht ist
+
+Zusätzlich unterstützt die Agentenschleife jetzt eine sichere `analysieren`-Aktion: Sie prüft einen relativ gültigen Pfad innerhalb des Workspaces und liest die Datei nur dann, wenn `pfad_ist_sicher` sie als sicher bestätigt. Dadurch können statische Code-Checks, Dateianalysen und Refactoring-Vorprüfungen direkt in die Iterationslogik integriert werden, ohne dass Traversals oder absolute Pfade den Arbeitsbereich verlassen.
 
 Diese Schleife wird durch `max_iterationen` begrenzt und kann im Offline-Modus ohne Ollama arbeiten.
 
@@ -159,6 +161,17 @@ Das Projekt ist bewusst auf diese Ziele ausgerichtet:
 ## 8. Technische Einschätzung
 
 Die Architektur ist im Vergleich zu einem reinen „LLM-Wrapper“ weitgehend als echter Agent aufgeführt: Sie kombiniert Dateisystemzugriff, Build- und Testlogik, Git-Interaktion, Modellzugriff und Ablaufsteuerung. Dadurch ist sie für lokale Automatisierung, prototypische Wissensarbeit und DevOps-Automation nutzbar, auch wenn sie bewusst auf Sicherheit und nachvollziehbare Befehlsstrukturen setzt.
+
+## 9. Erweiterter Analyse-/Refactoring- und UI-Statusfluss
+
+Die letzten Iterationen erweitern nicht nur die reine Agentenlogik, sondern auch die Transparenz der laufenden Zustände:
+
+- `Status`- und `LogStream`-Felder zeigen die aktuelle Iteration, aktive Analyse-/Build-Phase und die letzte bekannte LLM-Antwort an
+- Fehler- und Sicherheitsmeldungen werden separat aus den normalen Erfolgspfaden herausgelöst, damit mobile Nutzer schnell zwischen `kritisch`, `warnung`, `ok` und `neutral` unterscheiden können
+- der JSON-Parser im C++- und Kotlin-Layer toleriert zwar beschädigte oder teilweise unvollständige Modelleingaben, aber nur im Rahmen der bekannten Escape-/Unicode-Sicherheitsregeln; keine unescaped Sonderzeichen oder Path-Traversals werden akzeptiert
+- die nativen Handler für `analysieren` und `refactor_check` benutzen denselben zentralen Pfad-Guard wie die Schreib- und Laufwerksschritte, wodurch die Sicherheitslogik unveränderlich bleibt
+
+Diese Erweiterung macht die Architektur nicht nur intelligenter, sondern auch für Android- und Termux-Nutzung deutlich nachvollziehbarer, weil Status, Logstream und Fehlerpfad direkt im selben UI- oder Console-Kontext sichtbar bleiben.
 
 ## Version
 

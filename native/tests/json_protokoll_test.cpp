@@ -44,6 +44,18 @@ int main() {
         std::cerr << "Bauschritt falsch geparst\n";
         return 1;
     }
+    if (agent::Protokoll::typ_von_text("analysieren") != agent::AktionTyp::analysieren) {
+        std::cerr << "typ_von_text für analysieren fehlerhaft\n";
+        return 1;
+    }
+    const std::string analyse_json =
+        "{\"schritte\":[{\"aktion\":\"analysieren\",\"pfad\":\"src/main.cpp\"}]}";
+    auto analyse_schritte = agent::Protokoll::parsen(analyse_json);
+    if (analyse_schritte.size() != 1 || analyse_schritte[0].typ != agent::AktionTyp::analysieren ||
+        analyse_schritte[0].pfad != "src/main.cpp") {
+        std::cerr << "analysieren-Schritt falsch geparst\n";
+        return 1;
+    }
     if (agent::Protokoll::typ_von_text("fertig") != agent::AktionTyp::fertig) {
         std::cerr << "typ_von_text fehlerhaft\n";
         return 1;

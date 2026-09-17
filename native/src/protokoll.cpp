@@ -19,6 +19,7 @@ AktionTyp Protokoll::typ_von_text(const std::string& text) {
     if (t == "schreiben" || t == "write") return AktionTyp::schreiben;
     if (t == "loeschen" || t == "löschen" || t == "delete") return AktionTyp::loeschen;
     if (t == "lesen" || t == "read") return AktionTyp::lesen;
+    if (t == "analysieren" || t == "analyse" || t == "analyze") return AktionTyp::analysieren;
     if (t == "bauen" || t == "build") return AktionTyp::bauen;
     if (t == "testen" || t == "test") return AktionTyp::testen;
     if (t == "git_status" || t == "git-status") return AktionTyp::git_status;
@@ -33,6 +34,7 @@ std::string Protokoll::text_von_typ(AktionTyp typ) {
         case AktionTyp::schreiben: return "schreiben";
         case AktionTyp::loeschen: return "loeschen";
         case AktionTyp::lesen: return "lesen";
+        case AktionTyp::analysieren: return "analysieren";
         case AktionTyp::bauen: return "bauen";
         case AktionTyp::testen: return "testen";
         case AktionTyp::git_status: return "git_status";

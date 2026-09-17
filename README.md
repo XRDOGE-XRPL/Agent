@@ -273,6 +273,17 @@ Die folgenden Dokumente ergänzen die Hauptdoku speziell für verschiedene Zielg
 - Landing-Page-Text in `dokumentation/GITHUB_LANDINGPAGE.md`
 - Manuelle S24-/Termux-/Ollama-Setup-Anleitung in `dokumentation/HOWTO_S24_SETUP.md`
 
+### Erweiterter Analyse-/Refactoring-Lauf
+
+Die Agentenschleife unterstützt jetzt zusätzlich sichere Analyse- und Refactoring-Schritte, die bewusst auf lesbare Prüfungen und bereits validierte Dateipfade beschränkt sind. Typische Muster sind:
+
+- `analysieren`: Prüft Datei- oder Projektkontext ohne Schreibzugriff, validiert den Pfad und dokumentiert Abweichungen
+- `refactor_check`: prüft, ob eine geplante Änderung im Arbeitsbereich konsistent bleibt und keine Traversal-/absolute Pfade erzeugt
+- `build_check`: kombiniert lokale CMake-/CTest- oder Gradle-Prüfung mit einer strukturierten Rückmeldung der Agentenschleife
+- `status`: meldet laufende Iteration, aktive Phase und Sicherheitsstatus an das UI oder den Benutzer
+
+Damit bleibt der Agent in lokalen, mobilen und Android-/Termux-Umgebungen nachvollziehbar, ohne unkontrollierte Dateioperationen oder fehlerhafte JSON-Antworten zu akzeptieren.
+
 ## Definition of Done
 
 Ein sinnvoller Abschluss des Projekts ist erreicht, wenn:
