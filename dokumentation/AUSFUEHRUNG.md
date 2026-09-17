@@ -98,20 +98,20 @@ Wenn Ollama auf dem Host läuft und das Android-Emulator-Frontend genutzt wird, 
 Die Android-SDK-Umgebung muss in `local.properties` hinterlegt werden:
 
 ```properties
-sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 ### Debug-Build und Tests
 
 ```bash
 ./gradlew :app:testDebugUnitTest
-./gradlew :app:assembleDebug
+./build_apk.sh
 ```
 
 oder mit Gradle direkt:
 
 ```bash
-gradle :app:assembleDebug :app:testDebugUnitTest
+./gradlew clean assembleDebug --no-daemon --stacktrace
 ```
 
 Die Android-App verwendet `externalNativeBuild`, damit die nativen C++-Komponenten in den App-Workflow integriert werden.
@@ -216,3 +216,18 @@ Für echte lokale Validierungsläufe gilt zusätzlich:
 ## 10. Zusammenfassung
 
 Der Agent ist für mehrere Betriebsumgebungen vorbereitet: native lokale Entwicklung, Android-App-Builds und mobile Termux-Umgebungen. Die Ausführung ist bewusst kontrolliert, dokumentiert und an sichere Verhaltensregeln gebunden. Dadurch kann der Agent in einer produktiven Umgebung zuverlässig eingesetzt werden, ohne unverhältnismäßig viele Risiken oder unkontrollierte Dateiänderungen zuzulassen.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

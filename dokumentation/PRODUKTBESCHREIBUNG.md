@@ -110,3 +110,18 @@ Diese Ergänzungen machen das Produkt nicht nur stärker für Entwicklungsautoma
 ## Fazit
 
 Der autonome Entwicklungsagent ist ein praxisnahes Werkzeug für moderne Softwareentwicklung: lokal nutzbar, Android-fähig, sicher durch Pfadbegrenzung und geeignet für automatisierte Build- und Test-Workflows. Die Kombination aus Kontrolle, LLM-Unterstützung und Projekt-Integration macht das Projekt für Prototyping, lokale Automatisierung und spätere Produktivitäts-Workflows relevant.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

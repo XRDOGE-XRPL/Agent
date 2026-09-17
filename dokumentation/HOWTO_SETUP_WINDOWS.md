@@ -123,7 +123,7 @@ Wenn zusätzlich Android-Builds oder Unit-Tests gebaut werden sollen, ist das An
 Im Projektstamm erzeugen:
 
 ```properties
-sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Beispiel:
@@ -135,14 +135,14 @@ sdk.dir=C\:/Users/Max/AppData/Local/Android/Sdk
 ### 6.2 App-Build und Tests
 
 ```powershell
-./gradlew :app:assembleDebug
+./build_apk.sh
 ./gradlew :app:testDebugUnitTest
 ```
 
 Oder mit Gradle direkt:
 
 ```powershell
-gradle :app:assembleDebug :app:testDebugUnitTest
+./gradlew clean assembleDebug --no-daemon --stacktrace
 ```
 
 Wichtig: Das Projekt verwendet Android Gradle Plugin 8.7.3 und Gradle 8.9 als kompatiblen Stack.
@@ -232,3 +232,18 @@ Das ist beabsichtigt und Teil der Sicherheitslogik. Der Agent darf nur innerhalb
 6. Bei Android: SDK in `local.properties` setzen und Gradle-Tests ausführen
 
 Damit ist der Setup-Pfad auf Windows vollständig und ohne offene Unklarheiten nutzbar.
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+

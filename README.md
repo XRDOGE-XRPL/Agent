@@ -172,20 +172,20 @@ agentenlauf --arbeitsverzeichnis /home/user/projekt --aufgabe "Füge eine kleine
 `local.properties` mit dem SDK-Pfad ergänzen:
 
 ```properties
-sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Danach:
 
 ```bash
-./gradlew :app:assembleDebug
+./build_apk.sh
 ./gradlew :app:testDebugUnitTest
 ```
 
 oder
 
 ```bash
-gradle :app:assembleDebug :app:testDebugUnitTest
+./gradlew clean assembleDebug --no-daemon --stacktrace
 ```
 
 ## Funktionsweise der Agentenschleife
@@ -257,7 +257,7 @@ Wichtige Prüfungen:
 - `cmake --build build-native`
 - `ctest --test-dir build-native --output-on-failure`
 - `./gradlew :app:testDebugUnitTest`
-- `./gradlew :app:assembleDebug`
+- `./build_apk.sh`
 
 ## Zusätzliche Dokumentation
 
@@ -300,3 +300,18 @@ Ein sinnvoller Abschluss des Projekts ist erreicht, wenn:
 3. Debug-APK erzeugt werden kann
 4. Die Dokumentation die reale Architektur, Nutzung und Risiken beschreibt
 5. Der Agent in Online- und Offline-Modus stabil arbeitet
+## Proot-Debian-Build (verpflichtend)
+
+Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+
+```bash
+# Beispiel: Android SDK unter /opt/android-sdk
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+
