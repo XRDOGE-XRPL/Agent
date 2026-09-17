@@ -1,4 +1,5 @@
 #include "agent/http_klient.h"
+#include "agent/json_werkzeuge.h"
 
 #include <algorithm>
 #include <cctype>
@@ -78,6 +79,19 @@ bool timeout_setzen(SocketTyp s, int sekunden) {
 std::string klein(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return s;
+}
+
+std::string json_fehlermeldung(const std::string& koerper) {
+    if (auto wert = json::string_feld(koerper, "error")) {
+        return *wert;
+    }
+    if (auto wert = json::string_feld(koerper, "message")) {
+        return *wert;
+    }
+    if (auto wert = json::string_feld(koerper, "detail")) {
+        return *wert;
+    }
+    return {};
 }
 
 std::string chunked_dekodieren(const std::string& roh) {
@@ -272,7 +286,12 @@ HttpAntwort HttpKlient::senden(const std::string& methode, const std::string& ur
     antwort.koerper = std::move(koerper_roh);
     antwort.ok = antwort.status >= 200 && antwort.status < 300;
     if (!antwort.ok && antwort.fehler.empty()) {
-        antwort.fehler = "HTTP-Status " + std::to_string(antwort.status);
+        const std::string json_fehler = json_fehlermeldung(antwort.koerper);
+        if (!json_fehler.empty()) {
+            antwort.fehler = json_fehler;
+        } else {
+            antwort.fehler = "HTTP-Status " + std::to_string(antwort.status);
+        }
     }
     return antwort;
 }

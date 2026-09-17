@@ -58,7 +58,30 @@ def detect_termux() -> bool:
     if shutil.which("termux-info") is not None:
         return True
     release = platform.uname().release.lower()
-    return "termux" in release or "android" in release and os.environ.get("TERMUX_VERSION") is not None
+    return "termux" in release or ("android" in release and os.environ.get("TERMUX_VERSION") is not None)
+
+
+def detect_java_home() -> Optional[str]:
+    java_home = os.environ.get("JAVA_HOME")
+    if java_home:
+        return java_home
+
+    candidates = [
+        "/usr/lib/jvm/java-21-openjdk-amd64",
+        "/usr/lib/jvm/java-21-openjdk",
+        "/usr/lib/jvm/default-java",
+        "/data/data/com.termux/files/usr/lib/jvm/java-21-openjdk",
+        "/data/data/com.termux/files/usr/lib/jvm/default-java",
+        "/usr/lib/jvm/java-17-openjdk-amd64",
+        "/usr/lib/jvm/java-17-openjdk",
+        "/usr/lib/jvm/java-11-openjdk-amd64",
+        "/usr/lib/jvm/java-11-openjdk",
+    ]
+    for candidate in candidates:
+        java_bin = Path(candidate) / ("bin/java.exe" if os.name == "nt" else "bin/java")
+        if java_bin.exists():
+            return candidate
+    return None
 
 
 def detect_architecture() -> str:
@@ -218,6 +241,12 @@ def bootstrap_runtime(
         "health": {"runtime_ready": False, "ollama_ready": False, "python_ready": False, "socket_ready": False},
     }
 
+    java_home = detect_java_home()
+    if java_home:
+        report["java_home"] = java_home
+    else:
+        report["warnings"].append("JAVA_HOME not detected; Gradle may fail until a JDK is installed or exported.")
+
     if not termux_mode:
         report["status"] = "safe-mode"
         report["warnings"].append("Not running in Termux. Runtime stays in safe mode and only local checks are performed.")
@@ -257,6 +286,10 @@ def bootstrap_runtime(
         report["warnings"].append(str(exc))
 
     config = ensure_runtime_config(config_path, workspace, ollama_url, model)
+    if java_home:
+        config["java_home"] = java_home
+        os.environ["JAVA_HOME"] = java_home
+        os.environ["PATH"] = str(Path(java_home) / "bin") + os.pathsep + os.environ.get("PATH", "")
     report["config"] = config
     report["log_dir"] = str(log_dir)
 

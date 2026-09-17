@@ -2,9 +2,52 @@
 #include "agent/dateisystem.h"
 
 #include <filesystem>
+#include <cstdlib>
 
 namespace agent {
 namespace fs = std::filesystem;
+
+namespace {
+
+std::string java_home_fallback() {
+    const char* env = std::getenv("JAVA_HOME");
+    if (env && *env) {
+        return env;
+    }
+
+    const std::string kandidaten[] = {
+        "/usr/lib/jvm/java-21-openjdk-amd64",
+        "/usr/lib/jvm/java-21-openjdk",
+        "/usr/lib/jvm/default-java",
+        "/data/data/com.termux/files/usr/lib/jvm/java-21-openjdk",
+        "/data/data/com.termux/files/usr/lib/jvm/default-java",
+        "/usr/lib/jvm/java-17-openjdk-amd64",
+        "/usr/lib/jvm/java-17-openjdk",
+        "/usr/lib/jvm/java-11-openjdk-amd64",
+        "/usr/lib/jvm/java-11-openjdk"
+    };
+
+    for (const std::string& kandidat : kandidaten) {
+        if (Dateisystem::existiert(kandidat + "/bin/java")) {
+            return kandidat;
+        }
+    }
+    return {};
+}
+
+std::string gradle_kommando(const std::string& projekt_ordner, const std::string& wrapper_name) {
+    const fs::path wrapper = fs::path(projekt_ordner) / wrapper_name;
+    if (Dateisystem::existiert(wrapper.string())) {
+#if defined(_WIN32)
+        return wrapper_name + " test --no-daemon";
+#else
+        return "sh ./" + wrapper_name + " test --no-daemon";
+#endif
+    }
+    return "gradle test --no-daemon";
+}
+
+}  // namespace
 
 ProzessErgebnis BuildDienst::cmake_konfigurieren(const std::string& quelle, const std::string& build_ordner) {
     Dateisystem::verzeichnis_anlegen(build_ordner);
@@ -26,18 +69,24 @@ ProzessErgebnis BuildDienst::ctest_laufen(const std::string& build_ordner) {
 }
 
 ProzessErgebnis BuildDienst::gradle_testen(const std::string& projekt_ordner) {
+    const std::string java_home = java_home_fallback();
+    std::string env_prefix;
+    if (!java_home.empty()) {
+        env_prefix = "JAVA_HOME=\"" + java_home + "\" PATH=\"" + java_home + "/bin:$PATH\" ";
+    }
+
 #ifdef _WIN32
     const std::string wrapper = (fs::path(projekt_ordner) / "gradlew.bat").string();
     if (Dateisystem::existiert(wrapper)) {
-        return GitDienst::ausfuehren(projekt_ordner, "gradlew.bat test --no-daemon");
+        return GitDienst::ausfuehren(projekt_ordner, env_prefix + "gradlew.bat test --no-daemon");
     }
-    return GitDienst::ausfuehren(projekt_ordner, "gradle test --no-daemon");
+    return GitDienst::ausfuehren(projekt_ordner, env_prefix + "gradle test --no-daemon");
 #else
     const std::string wrapper = (fs::path(projekt_ordner) / "gradlew").string();
     if (Dateisystem::existiert(wrapper)) {
-        return GitDienst::ausfuehren(projekt_ordner, "sh ./gradlew test --no-daemon");
+        return GitDienst::ausfuehren(projekt_ordner, env_prefix + "sh ./gradlew test --no-daemon");
     }
-    return GitDienst::ausfuehren(projekt_ordner, "gradle test --no-daemon");
+    return GitDienst::ausfuehren(projekt_ordner, env_prefix + "gradle test --no-daemon");
 #endif
 }
 

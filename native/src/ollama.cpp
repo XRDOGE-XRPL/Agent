@@ -13,12 +13,14 @@ std::string OllamaKlient::anfragen(const std::string& prompt, std::string& fehle
         fehler = "Offline-Modus: Keine LLM-Anfrage";
         return {};
     }
+    const std::string prompt_kurz = prompt.size() > 12000 ? prompt.substr(0, 12000) : prompt;
+
     std::ostringstream body;
     body << "{"
          << "\"model\":\"" << json::escapen(konfig_.modell) << "\","
-         << "\"prompt\":\"" << json::escapen(prompt) << "\","
+         << "\"prompt\":\"" << json::escapen(prompt_kurz) << "\","
          << "\"stream\":false,"
-         << "\"options\":{\"temperature\":0.2}"
+         << "\"options\":{\"temperature\":0.2,\"num_predict\":2048}"
          << "}";
     std::string basis = konfig_.ollama_url;
     if (!basis.empty() && basis.back() == '/') {
@@ -28,7 +30,10 @@ std::string OllamaKlient::anfragen(const std::string& prompt, std::string& fehle
     if (!antwort.ok) {
         fehler = antwort.fehler.empty() ? "Ollama-Anfrage fehlgeschlagen" : antwort.fehler;
         if (!antwort.koerper.empty()) {
-            fehler += " | " + antwort.koerper.substr(0, 400);
+            const std::string kurz = antwort.koerper.substr(0, 400);
+            if (!kurz.empty()) {
+                fehler += " | " + kurz;
+            }
         }
         return {};
     }
