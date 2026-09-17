@@ -31,15 +31,16 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("debug") {
+            isDebuggable = true
+            jniDebuggable = true
+        }
+        getByName("release") {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-        debug {
-            isMinifyEnabled = false
         }
     }
 
@@ -64,6 +65,19 @@ android {
             version = "3.22.1"
         }
     }
+
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
