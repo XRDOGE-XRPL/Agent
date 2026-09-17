@@ -2,29 +2,44 @@
 
 ## Ziel
 
-Dieses Handbuch beschreibt den einfachen Setup-Pfad für lokale Entwicklung auf Windows mit dem nativen C++-Projekt des Agenten. Es deckt die wichtigsten Schritte bis zum erfolgreichen Build, Testlauf und dem Start der CLI ab.
+Dieses Dokument beschreibt den vollständigen Setup-Pfad für lokale Entwicklung auf Windows. Es zeigt, wie das Repository vorbereitet, gebaut, getestet und mit dem Agenten gestartet wird. Die Anleitungen decken den nativen C++-Workflow, den Android-Zusatzpfad und den optionalen Ollama-/LLM-Lauf ab.
 
-## Voraussetzungen
+## 1. Voraussetzungen
 
-Vor dem Aufbau des Projekts sollten diese Tools installiert sein:
+Vor dem Start sollten diese Tools installiert sein:
 
 - Git
-- CMake 3.16 oder neuer
+- CMake 3.16+
 - C++20-Compiler
 - Optional: MinGW/MSYS2 oder Visual Studio Build Tools
-- Optional: Python 3, falls der lokale Runner oder Bootstrap genutzt werden soll
-- Optional: Ollama, wenn ein echtes LLM-Modell verwendet werden soll
+- Optional: Python 3, wenn der lokale Runner oder Bootstrap verwendet wird
+- Optional: Java 17+ und Android SDK, falls Android-Unit-Tests oder App-Builds benötigt werden
+- Optional: Ollama, falls ein echtes lokales Modell verwendet werden soll
 
-## 1. Repository klonen
+Prüfen, ob die wichtigsten Werkzeuge bereits vorhanden sind:
+
+```powershell
+git --version
+cmake --version
+where gcc
+where g++
+where python
+```
+
+Wenn `cmake` oder ein C++-Compiler fehlt, müssen diese zuerst installiert werden.
+
+## 2. Repository klonen
 
 ```powershell
 git clone <repo-url>
 cd Agent
 ```
 
-## 2. Build-Umgebung vorbereiten
+Danach liegt das Projekt im aktuellen Ordner `Agent`.
 
-### Option A: MinGW/MSYS2
+## 3. Native Build auf Windows
+
+### 3.1 Direkt mit CMake
 
 ```powershell
 cmake -S native -B build-native -G "MinGW Makefiles"
@@ -32,87 +47,188 @@ cmake --build build-native
 ctest --test-dir build-native --output-on-failure
 ```
 
-### Option B: PowerShell-Skript
+### 3.2 Mit dem vorhandenen Build-Skript
 
 ```powershell
 ./skripte/lokal_bauen.ps1
 ```
 
-Das Build-Skript richtet den Standard-Workflow für lokale Native-Entwicklung auf Windows ein und startet danach den CMake-/CTest-Lauf.
+Das Skript legt den Build-Ordner `build-native` an, konfiguriert das CMake-Projekt und startet den Testlauf mit `ctest`.
 
-## 3. CLI ausführen
+### 3.3 Ergebnis prüfen
 
-Nach erfolgreichem Build liegt die ausführbare Datei typischerweise unter:
+Nach erfolgreichem Build sollte die ausführbare Datei in diesem Ordner liegen:
 
 ```text
 build-native\agentenlauf.exe
 ```
 
-Beispiel:
+Wenn die Datei vorhanden ist, ist der native Setup-Schritt erfolgreich.
+
+## 4. CLI starten
+
+Der Agent wird mit den wichtigsten Parametern gestartet:
 
 ```powershell
 ./build-native/agentenlauf.exe --arbeitsverzeichnis C:/workspace/mein-projekt --aufgabe "Erstelle ein Mini-CMake-Projekt mit Test" --ollama-url http://127.0.0.1:11434 --modell llama3.2
 ```
 
-Wichtige Parameter:
+Wichtige Argumente:
 
-- `--arbeitsverzeichnis`: Zielordner des Agenten
-- `--aufgabe`: Aufgabenbeschreibung
-- `--ollama-url`: URL des lokalen Ollama-Servers
+- `--arbeitsverzeichnis`: Zielordner, in dem der Agent arbeitet
+- `--aufgabe`: Beschreibung der Aufgabe in natürlicher Sprache
+- `--ollama-url`: URL des Ollama-Servers, z. B. `http://127.0.0.1:11434`
 - `--modell`: Modellname, z. B. `llama3.2`
-- `--max-iterationen`: Maximale Agent-Iterationen
-- `--offline`: Lauf ohne externes LLM
-- `--git-commits`: Aktiviert begrenzte Git-Commit-Operationen
+- `--max-iterationen`: Maximale Anzahl der Agenten-Schritte
+- `--offline`: läuft ohne externes LLM
+- `--git-commits`: erlaubt begrenzte Git-Operationen, falls konfiguriert
 
-## 4. Ollama lokal einrichten
+Beispiel ohne Ollama:
 
-Wenn ein reales Modell verwendet werden soll, muss Ollama lokal erreichbar sein.
+```powershell
+./build-native/agentenlauf.exe --arbeitsverzeichnis C:/workspace/mein-projekt --aufgabe "Prüfe das Projekt und baue es lokal" --offline
+```
 
-Installation und Start:
+## 5. Ollama lokal einrichten
+
+Wenn ein echtes LLM verwendet werden soll, muss Ollama lokal erreichbar sein.
+
+### 5.1 Ollama installieren und starten
 
 ```powershell
 ollama pull llama3.2
 ollama serve
 ```
 
-Danach kann der Agent auf einen lokalen Endpoint wie:
+Nach dem Start lauscht Ollama typischerweise auf:
 
 ```text
 http://127.0.0.1:11434
 ```
 
-zugreifen.
+### 5.2 Mit dem Agenten testen
 
-## 5. Troubleshooting
+```powershell
+./build-native/agentenlauf.exe --arbeitsverzeichnis C:/workspace/mein-projekt --aufgabe "Erstelle ein kleines Testprojekt und prüfe den Build" --ollama-url http://127.0.0.1:11434 --modell llama3.2
+```
 
-### Build fehlschlägt
+Wenn Ollama nicht installiert ist oder nicht läuft, muss man entweder `--offline` verwenden oder zuerst das lokale Modell starten.
+
+## 6. Android-Setup auf Windows
+
+Wenn zusätzlich Android-Builds oder Unit-Tests gebaut werden sollen, ist das Android SDK nötig.
+
+### 6.1 `local.properties` erstellen
+
+Im Projektstamm erzeugen:
+
+```properties
+sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+```
+
+Beispiel:
+
+```properties
+sdk.dir=C\:/Users/Max/AppData/Local/Android/Sdk
+```
+
+### 6.2 App-Build und Tests
+
+```powershell
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+```
+
+Oder mit Gradle direkt:
+
+```powershell
+gradle :app:assembleDebug :app:testDebugUnitTest
+```
+
+Wichtig: Das Projekt verwendet Android Gradle Plugin 8.7.3 und Gradle 8.9 als kompatiblen Stack.
+
+## 7. Python-Runner für Windows/Linux-ähnliche Umgebungen
+
+Das Projekt enthält zusätzlich einen lokalen Laufmechanismus für Shell-/Termux-artige Umgebungen:
+
+```powershell
+python laufwerk/termux_ollama.py --arbeitsverzeichnis C:/workspace/agent-test --aufgabe "Mini-CMake-Projekt mit Test"
+```
+
+Der Runner akzeptiert grundsätzlich dieselben Grundparameter:
+
+- `--arbeitsverzeichnis`
+- `--aufgabe`
+- `--ollama-url`
+- `--modell`
+- `--max-iterationen`
+- `--offline`
+- `--bootstrap`
+
+## 8. Termux-/Bootstrap auf Android/Termux
+
+Für Android/Termux-Umgebungen kann der Bootstrap aktiviert werden:
+
+```bash
+python3 laufwerk/termux_bootstrap.py --bootstrap
+```
+
+Oder
+
+```bash
+bash skripte/termux_setup.sh
+```
+
+Der Bootstrap prüft die Umgebung, installiert fehlende Pakete, initialisiert Laufzeit-Ordner und prüft die Ollama-/Socket-Umgebung mit Safe-Mode-Fallback.
+
+## 9. Sicherheitsmodell
+
+Der Agent arbeitet nur innerhalb des konfigurierten Arbeitsverzeichnisses. Pfade mit `..` oder Bereiche außerhalb des Projekts werden als unsicher abgelehnt. Das verhindert ungewollte Schreib- und Löschaktionen außerhalb des Zielbereichs.
+
+## 10. Troubleshooting
+
+### Build schlägt fehl
 
 - CMake-Version prüfen
-- Compilerpfad und Build-Tools verifizieren
-- `build-native`-Ordner löschen und neu konfigurieren
+- Compilerpfad und Build-Tools überprüfen
+- `build-native` neu löschen und neu konfigurieren
 
 ```powershell
 Remove-Item -Recurse -Force build-native
 cmake -S native -B build-native -G "MinGW Makefiles"
+cmake --build build-native
+ctest --test-dir build-native --output-on-failure
 ```
 
-### Ollama nicht erreichbar
+### `agentenlauf.exe` fehlt
 
-- Prüfen, ob `ollama serve` läuft
-- URL und Port prüfen
-- Model korrekt installiert
-- Bei Bedarf `--offline` nutzen
+- Sicherstellen, dass der Build erfolgreich abgeschlossen wurde
+- `build-native` prüfen
+- CMake-Generierung erneut ausführen
 
-### Unsichere Pfade
+### `local.properties` fehlt oder SDK-Pfad ist falsch
 
-Der Agent erlaubt nur Änderungen innerhalb des aktiv gesetzten Arbeitsverzeichnisses. So bleiben Systempfade und fremde Ordner geschützt.
+- `local.properties` im Projektstamm anlegen
+- SDK-Pfad mit dem installierten Android SDK abgleichen
 
-## 6. Standard-Workflow
+### Ollama ist nicht erreichbar
+
+- prüfen, ob `ollama serve` läuft
+- URL auf `http://127.0.0.1:11434` prüfen
+- Modell mit `ollama pull llama3.2` installieren
+- Bei Bedarf auf `--offline` umschalten
+
+### Agent kann außerhalb des Arbeitsbereichs nichts ändern
+
+Das ist beabsichtigt und Teil der Sicherheitslogik. Der Agent darf nur innerhalb des definierten Projektordners schreiben.
+
+## 11. Standard-Workflow für Windows
 
 1. Repository klonen
-2. CMake-Projekt konfigurieren und bauen
-3. Tests mit `ctest` validieren
-4. CLI mit Projektpfad und Aufgabe starten
-5. Falls nötig Ollama aktivieren und Modell auswählen
+2. CMake/Compiler installieren
+3. Projekt bauen und testen
+4. CLI mit Aufgabenbeschreibung starten
+5. Optional: Ollama starten und Modell verwenden
+6. Bei Android: SDK in `local.properties` setzen und Gradle-Tests ausführen
 
-Damit ist die lokale Windows-Entwicklung für den Agenten in der Regel sofort nutzbar.
+Damit ist der Setup-Pfad auf Windows vollständig und ohne offene Unklarheiten nutzbar.
