@@ -1,0 +1,14 @@
+{
+  "workspace": "/werkstatt",
+  "agentStatus": "ready",
+  "lastUpdated": 0,
+  "provider": "local",
+  "model": "llama3.2",
+  "iterations": 8,
+  "ttlMinutes": 30,
+  "buildStatus": "ready",
+  "lastTerminalCommand": null,
+  "lastTerminalExit": null,
+  "lastTerminalOutput": null,
+  "memoryEntries": 0
+}

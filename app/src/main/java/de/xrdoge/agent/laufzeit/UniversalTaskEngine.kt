@@ -28,16 +28,32 @@ class UniversalTaskEngine(
         val projectType = detectProjectType(normalized)
         val projectId = UUID.randomUUID().toString().take(8)
         val projectDir = File(sandboxRoot, "${projectType}-${projectId}").apply { mkdirs() }
-        val writtenFiles = scaffoldProject(projectDir, projectType, normalized)
-        val project = GeneratedProject(projectId, projectType, normalized, projectDir, writtenFiles)
+        generateIntoDirectory(normalized, projectDir, projectType)
+    }
+
+    fun generateIntoDirectory(taskDescription: String, targetDir: File): GeneratedProject = synchronized(lock) {
+        val normalized = taskDescription.trim().ifBlank { "Generic automation project" }
+        val projectType = detectProjectType(normalized)
+        generateIntoDirectory(normalized, targetDir, projectType)
+    }
+
+    private fun generateIntoDirectory(taskDescription: String, targetDir: File, projectType: String): GeneratedProject {
+        targetDir.mkdirs()
+        val writtenFiles = scaffoldProject(targetDir, projectType, taskDescription)
+        val projectId = UUID.randomUUID().toString().take(8)
+        val project = GeneratedProject(projectId, projectType, taskDescription, targetDir, writtenFiles)
         lastProject = project
-        logStream?.append("[sandbox] created $projectType project in ${projectDir.absolutePath}")
-        writeDocumentationSuite(projectDir, projectType, normalized)
+        logStream?.append("[workspace] created $projectType project in ${targetDir.absolutePath}")
+        writeDocumentationSuite(targetDir, projectType, taskDescription)
         project
     }
 
-    suspend fun generateAndValidate(taskDescription: String): String {
-        val project = generate(taskDescription)
+    suspend fun generateAndValidate(taskDescription: String, targetDir: File? = null): String {
+        val project = if (targetDir != null) {
+            generateIntoDirectory(taskDescription, targetDir)
+        } else {
+            generate(taskDescription)
+        }
         val validationCommand = when (project.type) {
             "telegram-bot" -> "python3 -m py_compile bot.py"
             "pawn-server" -> "printf '%s\\n' 'Pawn project ready: ${project.rootDir.name}'"

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/grau_hintergrund">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Dashboard"
+            android:textColor="@color/text_hell"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <EditText
+            android:id="@+id/dashboardWorkspace"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Arbeitsverzeichnis"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardTask"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Task"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardOllamaUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ollama-URL"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardModel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Modell"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardIterations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Iterationen"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardProvider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Provider"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <EditText
+            android:id="@+id/dashboardTtl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="TTL Minuten"
+            android:textColor="@color/text_hell"
+            android:textColorHint="@color/text_gedimmt" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="12dp">
+
+            <Button
+                android:id="@+id/dashboardStartButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Start" />
+
+            <Button
+                android:id="@+id/dashboardPauseButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Pause" />
+
+            <Button
+                android:id="@+id/dashboardStopButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Stopp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/dashboardStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="12dp"
+            android:background="@color/grau_karte"
+            android:text="Status: bereit"
+            android:textColor="@color/gruen_akzent" />
+    </LinearLayout>
+</ScrollView>

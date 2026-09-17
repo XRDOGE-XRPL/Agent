@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/grau_hintergrund"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AppBuilder Pipeline"
+        android:textColor="@color/text_hell"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="12dp" />
+
+    <Button
+        android:id="@+id/appBuilderRunButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Build starten" />
+
+    <TextView
+        android:id="@+id/appBuilderStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:padding="12dp"
+        android:background="@color/grau_karte"
+        android:text="Build ready"
+        android:textColor="@color/gruen_akzent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/appBuilderArtifacts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp"
+        android:background="@color/grau_karte" />
+</LinearLayout>
