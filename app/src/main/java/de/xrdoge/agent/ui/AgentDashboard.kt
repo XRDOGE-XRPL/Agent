@@ -1,6 +1,7 @@
 package de.xrdoge.agent.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,29 @@ private fun loadWorkspaceDocs(projectDir: File): Map<String, String> {
     }.toMap()
 }
 
+private fun listProjectTree(root: File): List<String> {
+    if (!root.exists() || !root.isDirectory) return emptyList()
+    val results = mutableListOf<String>()
+    fun walk(dir: File, relativePath: String) {
+        val entries = dir.listFiles()?.sortedWith(compareBy<File> { !it.isDirectory }.thenBy { it.name.lowercase() }) ?: return
+        for (entry in entries) {
+            val childPath = if (relativePath.isBlank()) entry.name else "$relativePath/${entry.name}"
+            results.add(childPath + if (entry.isDirectory) "/" else "")
+            if (entry.isDirectory) {
+                walk(entry, childPath)
+            }
+        }
+    }
+    walk(root, "")
+    return results
+}
+
+private fun readFileContent(file: File): String = try {
+    file.readText(Charsets.UTF_8)
+} catch (_: Exception) {
+    "[unable to read file: ${file.absolutePath}]"
+}
+
 @Composable
 fun AgentDashboard(
     runtime: AgentRuntime,
@@ -74,11 +98,23 @@ fun AgentDashboard(
     val route by runtime.executionRouter.lastRoute.collectAsState(initial = null)
     val services by runtime.ephemeralServiceManager.servicesFlow.collectAsState(initial = emptyList())
     var docs by remember { mutableStateOf(emptyMap<String, String>()) }
+    var terminalInput by remember { mutableStateOf("") }
+    var terminalOutput by remember { mutableStateOf(listOf<String>()) }
+    var projectTree by remember { mutableStateOf(listOf<String>()) }
+    var selectedFileContent by remember { mutableStateOf<String?>(null) }
+    var selectedFilePath by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(workspace) {
         docs = withContext(Dispatchers.IO) {
             loadWorkspaceDocs(File(workspace))
         }
+        val workspaceDir = File(workspace).apply { mkdirs() }
+        projectTree = withContext(Dispatchers.IO) { listProjectTree(workspaceDir) }
+    }
+
+    LaunchedEffect(verzeichnis) {
+        val root = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+        projectTree = withContext(Dispatchers.IO) { listProjectTree(root) }
     }
 
     val runtimeState = listOf(
@@ -87,7 +123,7 @@ fun AgentDashboard(
         "Ollama: ${if (status.contains("Ollama", ignoreCase = true) || status.contains("reachable", ignoreCase = true)) "ready" else "pending"}",
         "IO: ready"
     )
-    val tabs = listOf("Dashboard", "Dokumentation")
+    val tabs = listOf("Dashboard", "Dokumentation", "Terminal", "Dateibaum")
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -231,6 +267,7 @@ fun AgentDashboard(
                                             status = result
                                             runtime.logStream.append(result)
                                             docs = loadWorkspaceDocs(targetDir)
+                                            projectTree = withContext(Dispatchers.IO) { listProjectTree(targetDir) }
                                             val projectRoot = runtime.universalTaskEngine.lastProject?.rootDir
                                             if (projectRoot != null && projectRoot.absolutePath != targetDir.absolutePath) {
                                                 docs = loadWorkspaceDocs(projectRoot)
@@ -319,7 +356,7 @@ fun AgentDashboard(
                             }
                         }
                     }
-                } else {
+                } else if (selectedTab == 1) {
                     if (docs.isEmpty()) {
                         Card {
                             Column(
@@ -352,6 +389,121 @@ fun AgentDashboard(
                                             text = content,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (selectedTab == 2) {
+                    Card {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text("Terminal", style = MaterialTheme.typography.titleMedium)
+                            OutlinedTextField(
+                                value = terminalInput,
+                                onValueChange = { terminalInput = it },
+                                label = { Text("Befehl") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Button(
+                                onClick = {
+                                    if (terminalInput.isBlank()) return@Button
+                                    val command = terminalInput.trim()
+                                    val workingDir = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+                                    scope.launch {
+                                        val result = withContext(Dispatchers.IO) {
+                                            runtime.socketBridge.executeCommand(
+                                                command = command,
+                                                workingDirectory = workingDir.absolutePath
+                                            )
+                                        }
+                                        terminalOutput = if (result.output.isBlank()) {
+                                            listOf("[terminal] command finished with exit ${result.exitCode}")
+                                        } else {
+                                            result.output.lines().filter { it.isNotBlank() }
+                                        }
+                                        runtime.logStream.append("[terminal] $command")
+                                        runtime.logStream.append(result.output.ifBlank { "[terminal] command finished with exit ${result.exitCode}" })
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Ausführen")
+                            }
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF1F1F1F))
+                            ) {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(terminalOutput.ifEmpty { listOf("[terminal] keine Ausgabe") }) { line ->
+                                        Text(
+                                            text = line,
+                                            color = Color(0xFFECECEC)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Card {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text("Projektordner / Dateibaum", style = MaterialTheme.typography.titleMedium)
+                            val treeRoot = File(verzeichnis.ifBlank { workspace }).apply { mkdirs() }
+                            if (projectTree.isEmpty()) {
+                                Text("Keine Dateien im aktuellen Arbeitsverzeichnis gefunden.")
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(projectTree) { entry ->
+                                        val relative = entry.removeSuffix("/")
+                                        val target = File(treeRoot, relative)
+                                        Text(
+                                            text = entry,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    if (target.isFile) {
+                                                        selectedFilePath = target.absolutePath
+                                                        selectedFileContent = readFileContent(target)
+                                                    }
+                                                }
+                                                .padding(vertical = 4.dp),
+                                            color = if (target.isFile) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                            if (selectedFilePath != null && selectedFileContent != null) {
+                                Card {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(selectedFilePath ?: "Datei", style = MaterialTheme.typography.titleMedium)
+                                        Text(
+                                            text = selectedFileContent ?: "",
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
                                     }
                                 }
