@@ -69,16 +69,16 @@ Der Bootstrap legt die Standardstruktur an:
 python3 laufwerk/termux_bootstrap.py --bootstrap
 ```
 
-### Check ohne Installation
+### Healthcheck ohne Installation
 
 ```bash
-python3 laufwerk/termux_bootstrap.py --check
+python3 laufwerk/termux_bootstrap.py --healthcheck
 ```
 
 ### Safe Mode
 
 ```bash
-python3 laufwerk/termux_bootstrap.py --check --json
+python3 laufwerk/termux_bootstrap.py --healthcheck --json
 ```
 
 ### Wrapper-Skript

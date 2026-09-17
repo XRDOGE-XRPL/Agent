@@ -135,7 +135,7 @@ Wenn weitere Toolchains ergänzt werden sollen, können neue Runner in `build.cp
 
 ## 6. Coding-Richtlinien
 
-- C++17 verwenden
+- C++20 verwenden
 - klare, kleine Funktionen und strukturierte Typen
 - JSON-Antworten strikt und kontrolliert behandeln
 - Dateisystemzugriffe nur innerhalb des Arbeitsbereichs zulassen

@@ -17,7 +17,7 @@ Dieses Handbuch beschreibt den vollständigen manuellen Setup- und Verifikations
 
 - Samsung Galaxy S24 oder vergleichbares Android-Gerät
 - USB-Kabel für direkte Verbindung zum Rechner
-- Computer mit Android Studio / SDK / Java 17+
+- Computer mit Android Studio / SDK / Java 21 in Proot-Debian (die App selbst zielt auf Java 17)
 - Zugriff auf Termux im Play Store oder F-Droid
 - Optionale Internetverbindung für APK-Download und Modell-Installation
 
@@ -25,7 +25,7 @@ Dieses Handbuch beschreibt den vollständigen manuellen Setup- und Verifikations
 
 - Android Studio (empfohlen: aktuelle stabile Version)
 - Android SDK + NDK
-- Java 17+
+- Java 21 in Proot-Debian; Android Studio kann zusätzlich JDK 17+ nutzen
 - Git
 - CMake und C++-Toolchain für native Builds
 - Termux
