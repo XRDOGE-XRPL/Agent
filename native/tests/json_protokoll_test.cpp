@@ -25,6 +25,10 @@ int main() {
         std::cerr << "surrogate-pair fehlerhaft\n";
         return 1;
     }
+    if (agent::json::string_feld("{\"status\":\"\\uD83D\"}", "status").value_or("") != "�") {
+        std::cerr << "defekte-surrogate-sequenz fehlerhaft\n";
+        return 1;
+    }
 
     const std::string antwort =
         "Hier JSON:\n{\"schritte\":[{\"aktion\":\"schreiben\",\"pfad\":\"a.txt\","
