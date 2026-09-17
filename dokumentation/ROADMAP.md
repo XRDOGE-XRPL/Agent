@@ -110,6 +110,18 @@ Ein erfolgreicher Fortschritt kann anhand dieser Kriterien gemessen werden:
 - bessere Durchlaufzeit und weniger Iterations-Fehler
 - höhere Zuverlässigkeit bei Projekten mit mehreren Dateien
 
+## Erweiterte Analyse-, Refactoring- und Validierungsroadmap
+
+Neben den klassischen CMake- und Gradle-Workflows wird der Agent in den nächsten Iterationen stärker mit analysierenden und refactor-orientierten Schritten erweitert. Die wichtigsten Ziele sind:
+
+- eine sichere `analysieren`-Aktion mit pfadvalidierter Dateiauswertung und klaren Fehlerpfaden
+- Refactoring-Checks, die vor dem Schreiben oder Überschreiben von Dateien prüfen, ob der Zielkontext im Arbeitsbereich bleibt
+- strukturierte Build-/Analysephasen im UI, damit der Nutzer zwischen `lesen`, `analysieren`, `bauen`, `testen` und `fertig` unterscheiden kann
+- reproduzierbare Offline-Tests mit lokalen Modellen auf Android/Termux, um längere Iterationsschleifen und Fehlerszenarien früh zu erkennen
+- zusätzliche Dokumentations- und Audit-Schritte, damit neue Sicherheitsregeln und JSON-Resilienzmechaniken jederzeit nachvollziehbar sind
+
+Die Roadmap bleibt damit auf drei Säulen ausgerichtet: produktive Autonomie, Sicherheitskontrolle und klare Nachvollziehbarkeit der iterativen Agentenarbeit.
+
 ## Fazit
 
 Die Roadmap ist darauf ausgerichtet, den Agenten von einem experimentellen Projekt zu einer verlässlichen Entwicklungsplattform zu machen. Die wichtigsten Hebel sind dabei Sicherheit, Kontextqualität, Stabilität und eine klare Benutzeroberfläche auf Android und CLI-Ebene.

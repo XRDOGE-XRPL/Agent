@@ -151,6 +151,18 @@ Der Agent gilt als validiert, wenn die folgenden Kriterien erfüllt sind:
 5. Agentenschleife arbeitet im Offline- und LLM-Modus stabil
 6. Die Sicherheitsgrenzen für Dateisystem und Git bleiben wirksam
 
+## 8.1 Erweiterte Analyse-/Refactoring-Validierung
+
+Für die neue Analyse-Pipeline gelten zusätzlich diese Qualitätsanforderungen:
+
+- jeder Dateizugriff muss den Pfad-Guard durchlaufen
+- relative Pfade sind Standard, absolute oder traversierende Pfade erzeugen einen sofortigen Fehler
+- `analysieren` darf nur lesend arbeiten und muss den Dateikontext sauber dokumentieren
+- `refactor_check` darf keine unkontrollierten Schreib- oder Löschoperationen auslösen
+- JSON-Antworten mit Unicode- oder Escape-Sequenzen müssen vollständig geparst werden, auch wenn sie fragmentarisch oder teilweise fehlerhaft sind
+
+Diese Validierungsregeln sind besonders wichtig für Termux-Instanzen mit begrenzter Ressourcenplanung, da dort lange Iterationsschleifen und wiederholte Build-/Analysezyklen sonst leicht in unvollständigen Antwort- oder Dateibeschädigungsszenarien enden.
+
 ## 9. Aktueller Status
 
 Der aktuelle Projektzustand ist als deploybarer Debug-Build mit erfolgreich validierten lokalen Testläufen definiert. Die Agentenschleife kann sowohl mit Mock-Daten als auch mit Ollama in einer echten lokalen Umgebung genutzt werden.

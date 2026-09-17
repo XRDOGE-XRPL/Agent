@@ -162,6 +162,17 @@ Das Projekt ist bewusst auf diese Ziele ausgerichtet:
 
 Die Architektur ist im Vergleich zu einem reinen „LLM-Wrapper“ weitgehend als echter Agent aufgeführt: Sie kombiniert Dateisystemzugriff, Build- und Testlogik, Git-Interaktion, Modellzugriff und Ablaufsteuerung. Dadurch ist sie für lokale Automatisierung, prototypische Wissensarbeit und DevOps-Automation nutzbar, auch wenn sie bewusst auf Sicherheit und nachvollziehbare Befehlsstrukturen setzt.
 
+## 9. Erweiterter Analyse-/Refactoring- und UI-Statusfluss
+
+Die letzten Iterationen erweitern nicht nur die reine Agentenlogik, sondern auch die Transparenz der laufenden Zustände:
+
+- `Status`- und `LogStream`-Felder zeigen die aktuelle Iteration, aktive Analyse-/Build-Phase und die letzte bekannte LLM-Antwort an
+- Fehler- und Sicherheitsmeldungen werden separat aus den normalen Erfolgspfaden herausgelöst, damit mobile Nutzer schnell zwischen `kritisch`, `warnung`, `ok` und `neutral` unterscheiden können
+- der JSON-Parser im C++- und Kotlin-Layer toleriert zwar beschädigte oder teilweise unvollständige Modelleingaben, aber nur im Rahmen der bekannten Escape-/Unicode-Sicherheitsregeln; keine unescaped Sonderzeichen oder Path-Traversals werden akzeptiert
+- die nativen Handler für `analysieren` und `refactor_check` benutzen denselben zentralen Pfad-Guard wie die Schreib- und Laufwerksschritte, wodurch die Sicherheitslogik unveränderlich bleibt
+
+Diese Erweiterung macht die Architektur nicht nur intelligenter, sondern auch für Android- und Termux-Nutzung deutlich nachvollziehbarer, weil Status, Logstream und Fehlerpfad direkt im selben UI- oder Console-Kontext sichtbar bleiben.
+
 ## Version
 
 Version: 1.0.0

@@ -64,6 +64,18 @@ Das langfristige Ziel ist ein verlässlicher Entwicklungsassistent, der Aufgaben
 - erweitere die Agentenschleife mit neuen Aktionen und Prüfungen
 - nutze die vorhandene Architektur als Basis für weitere Experimente
 
+## Erweiterte Agenten- und Sicherheitsfunktionen
+
+Die jüngste Entwicklungsphase erweitert den Agenten um mehrere praxisrelevante Funktionen:
+
+- sichere Analyse- und Refactoring-Schritte mit zentralem Pfad-Guard und klaren Fehlerpfaden
+- Status- und Loganzeigen für aktuelle Build-/Analysephasen im Android-/Compose-Frontend
+- robustes JSON- und Unicode-Handling, damit teilweise defekte Modellantworten die Laufzeit nicht lahmlegen
+- Offline-/Termux-Stresstests mit wiederholten Iterationsketten, Buildzyklen und Fehlerbehandlungen
+- konsistente Doku- und Validierungslogik, damit Architektur, Sicherheit und Nutzung immer synchron bleiben
+
+Damit wird das Projekt nicht nur als LLM-Wrapper, sondern als realer, kontrollierbarer Entwicklungsagent mit mobilem UI und sicherem Workspace-Containment positioniert.
+
 ## Kurzfazit
 
 Der autonome Entwicklungsagent verbindet KI, Buildautomatisierung, Sicherheit und Projektkontext in einem einzigen System. Damit ist er ein starkes Grundgerüst für moderne, lokale und mobile Entwicklungshilfe.

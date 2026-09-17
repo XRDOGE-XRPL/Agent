@@ -198,6 +198,21 @@ Der Agent verweigert Änderungen außerhalb des aktiven Arbeitsverzeichnisses. D
 3. Builds und Testläufe lokal überwachen
 4. Modell und API-Endpunkt validieren
 
+## 9. Erweiterte Analyse-/Refactoring-Aktionen
+
+Der Laufpfad wurde um zusätzliche, sichere Analyse- und Refactoring-Schritte erweitert. Diese werden in der Agentenschleife als eigene Zustände behandelt und immer mit einer Pfadvalidierung verknüpft:
+
+- `analysieren` prüft relative, in-root Pfade und liest nur in den zulässigen Arbeitsbereich
+- `refactor_check` prüft den vorgeschlagenen "Vor-Schreib"-Zustand, bevor Änderungen wirksam werden
+- `build_check` kombiniert Laufzeitstatus, Build-Erfolg und Testresultat in einem konsistenten Schritt
+- `status` gibt den aktuellen Iterationszustand und Sicherheitsstatus an die UI-/Console-Ausgabe weiter
+
+Für echte lokale Validierungsläufe gilt zusätzlich:
+
+- mehrere Analyse-/Build-Zyklen werden in einer einzigen Iterationskette ohne Zustandsverlust durchgeführt
+- Fehlerpfade werden protokolliert, damit die nächste Runde mit dem korrekten Kontext startet
+- JSON- und Unicode-Inhalte werden robust geparst, selbst wenn das LLM teilweise defekte oder unvollständige Antworten liefert
+
 ## 10. Zusammenfassung
 
 Der Agent ist für mehrere Betriebsumgebungen vorbereitet: native lokale Entwicklung, Android-App-Builds und mobile Termux-Umgebungen. Die Ausführung ist bewusst kontrolliert, dokumentiert und an sichere Verhaltensregeln gebunden. Dadurch kann der Agent in einer produktiven Umgebung zuverlässig eingesetzt werden, ohne unverhältnismäßig viele Risiken oder unkontrollierte Dateiänderungen zuzulassen.

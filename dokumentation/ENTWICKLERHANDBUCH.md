@@ -182,6 +182,18 @@ Ein typischer Erweiterungsfall wäre das Hinzufügen einer neuen Agentenaktion w
 4. Build-/Testlogik für den neuen Laufpfad einbauen
 5. Doku und Validierung ergänzen
 
+## 9.1 Erweiterte Analyse-/Refactoring-Aktionen
+
+Der Agent wurde zusätzlich um eine klar definierte Analyse- und Refactoring-Schicht erweitert. Für neue Aktionen sollten Entwickler diese Regeln beachten:
+
+1. Jede Aktion wird zuerst im JSON-Parser validiert und danach im Agentenschleifen-Handler ausgewertet.
+2. Dateioperationen laufen immer über denselben Pfad-Guard, damit keine Traversal- oder absolute Pfade in das Arbeitsverzeichnis eindringen.
+3. Analyseaktionen sind grundsätzlich lesend und liefern nur Status, Quelltextkontext oder Sicherheitswarnungen zurück.
+4. Refactoring-Checks müssen vor dem Schreiben prüfen, ob das Ziel im zulässigen Arbeitsbereich liegt und ob der Ziel-Zustand noch konsistent mit dem bisherigen Build-/Teststatus ist.
+5. Wenn der Fehlpfad erkannt wird, muss der Handler eine definitive Fehlerkennung liefern, statt den Prozess stillschweigend fortzusetzen.
+
+Diese Kombination aus parserrobuster JSON-Behandlung, klarer Dispatch-Logik und zentraler Pfadprüfung reduziert die Anzahl schwerer Laufzeitfehler deutlich und ist die Grundlage für längere Iterationsketten in lokalen und mobilen Umgebungen.
+
 ## 10. Fazit
 
 Das Projekt ist als modulare Agentenarchitektur gedacht. Die wichtigsten Erweiterungspunkte liegen im nativen Kern, in der Sicherheit, in der LLM-Integration und in der Android-/Termux-Ausführung. Wer diese Strukturen nachvollzieht, kann das System gezielt erweitern, ohne die Kernprinzipien zu verletzen.

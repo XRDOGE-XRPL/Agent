@@ -95,6 +95,18 @@ Ein autonomer Agent kann nicht unbegrenzt vertraut werden. Die wichtigsten Grenz
 - Einschränkungen bei unklaren oder zu großen Projektkontexten
 - Bedarf an weiteren Validierungs- und Sicherheitsmechanismen in späteren Versionen
 
+## Erweiterte Produktmerkmale für Analyse, Status und Stabilität
+
+Das Produkt wurde erweitert um eine durchdachte Analyse- und Statusschicht:
+
+- `analysieren` erkennt und validiert Projektkontext, Dateistrukturen und kleinere Code-Bausteine ohne unkontrollierte Schreibzugriffe
+- der Laufzeitstatus zeigt die aktuelle Iteration, aktive Phase und Sicherheitswarnungen direkt im UI oder in der console-basierten Laufzeit an
+- die mobile Oberfläche kann Live-Logs der JNI-/Bridge-Schicht, Modellantworten und Fehlerzustände visualisieren, wodurch Android- und Termux-Nutzung transparent bleibt
+- lokale Offline- und Safe-Mode-Fallbacks schützen vor fehlenden LLM-Backends oder unvollständigen Setup-Zuständen
+- die robuste JSON-Behandlung verhindert, dass teilweise kaputte Modellantworten den Agentenlauf oder die UI-Schicht aus dem Takt bringen
+
+Diese Ergänzungen machen das Produkt nicht nur stärker für Entwicklungsautomatisierung, sondern auch für reale Nutzung in begrenzten oder ressourcenarmen Umgebungen.
+
 ## Fazit
 
 Der autonome Entwicklungsagent ist ein praxisnahes Werkzeug für moderne Softwareentwicklung: lokal nutzbar, Android-fähig, sicher durch Pfadbegrenzung und geeignet für automatisierte Build- und Test-Workflows. Die Kombination aus Kontrolle, LLM-Unterstützung und Projekt-Integration macht das Projekt für Prototyping, lokale Automatisierung und spätere Produktivitäts-Workflows relevant.

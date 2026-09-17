@@ -392,6 +392,18 @@ Wichtige Punkte:
 - `local.properties` korrekt
 - Java-Version 17+
 
+## 11.1 Erweiterte Sicherheits- und Laufzeitvalidierung auf Samsung S24
+
+Für reale lokale Tests auf dem Galaxy S24 gelten zusätzlich diese Regeln:
+
+- jedes Projekt- und Dateischritt muss im definierten Workspace bleiben
+- das `LocalSocketBridge` darf keine absoluten oder traversierenden Pfade zu Termux- oder Android-Dateien akzeptieren
+- Build-/Analysezyklen werden in mehreren Iterationen ausgeführt, damit Status-, Log- und Fehlerpfad wiederholt validiert werden
+- der UI-Layer zeigt nicht nur den letzten Zustand, sondern auch die letzte Modellantwort, Laufzeitphase und Sicherheitswarnung an
+- Modellantworten mit Unicode- oder Escape-Sprüngen müssen im Kotlin-/JSON-Parser robust dekodiert werden, ohne das UI oder die JNI-Logik zu beschädigen
+
+Diesen Prüfungen sollte vor jedem realen Produktionseinsatz ein vollständiger Offline- und Online-Testlauf vorausgehen.
+
 ## 12. Empfohlener End-to-End-Checkliste
 
 ### Vor dem Lauf

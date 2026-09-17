@@ -7,6 +7,8 @@
 - Klarere Hinweise zur lokalen Nutzung, Android-Ausführung, Termux-Anbindung und Teststrategie
 - Ergänzung von Roadmap, Produktbeschreibung, Entwicklerhandbuch und GitHub-Landing-Page-Dokumentation
 - Zusätzliche Zielgruppen-orientierte Projektübersichten für Interessenten, Entwickler und Präsentationen
+- Erweiterung der Markdown-Dokumentation um Analyse-/Refactoring-Aktionen, Pfadkontrolle, Android-Status-UI und Offline-/Termux-Validierung
+- Dokumentation der robusten JSON- und Unicode-Resilienz für Modelantworten und UI-Bridge-Integration
 
 ## 1.0.0
 

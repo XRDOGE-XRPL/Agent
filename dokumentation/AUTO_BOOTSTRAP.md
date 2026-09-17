@@ -126,6 +126,18 @@ Der Runtime-Status soll im Dashboard sichtbar sein, damit der Nutzer z. B. den n
 - besseres User Experience in Android-/Termux-Umgebungen
 - Automatische Fallback-Strategie bei unvollständigen Setups
 
+## Erweiterte Runtime- und Offline-Validierung
+
+Der Bootstrap ist nicht nur für die Installation zuständig, sondern auch für die Validierung der laufenden Agentenlogik. Wichtige Aspekte sind:
+
+- Start des Agenten im sicheren Modus, wenn Ollama oder kritische Laufzeitkomponenten fehlen
+- nachvollziehbare Statusmeldungen für `bootstrap`, `dependencies`, `runtime-check`, `ollama`, `safe-mode` und `ready`
+- Wiederholungs- und Fehlerbehandlungslogik für längere Iterationsketten in Android-/Termux-Umgebungen
+- strikte Vermeidung von Pfadtraversalen oder unkontrollierten Schreibzugriffen außerhalb des Arbeitsbereichs
+- Unterstützung für offline-validierte Builds, wenn das LLM-Backend nicht verfügbar ist
+
+Dadurch bleibt der Agent in eingeschränkten mobilen Umgebungen stabil, selbst wenn Modellzugriff, Paketinstallation oder lokale Shell-Ausführungen nicht vollständig verfügbar sind.
+
 ## Fazit
 
 Der Bootstrap ist die zentrale Brücke zwischen einer manuellen Installation und einer echten “Termux-first”-Automation. Sobald das Tool auf Termux erkannt wird, versucht es automatisch den kompletten Runtime-Stack zu präparieren und bleibt dabei durch Safe-Mode-Mechaniken robust.
