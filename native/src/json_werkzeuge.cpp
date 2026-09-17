@@ -8,6 +8,10 @@ namespace agent::json {
 namespace {
 
 std::string utf8_von_codepunkt(unsigned int codepunkt) {
+    if ((codepunkt >= 0xD800 && codepunkt <= 0xDFFF) || codepunkt > 0x10FFFF) {
+        codepunkt = 0xFFFD;
+    }
+
     std::string zeichen;
     if (codepunkt <= 0x7F) {
         zeichen.push_back(static_cast<char>(codepunkt));
@@ -164,13 +168,17 @@ std::string unescapen(const std::string& roh) {
                                     }
                                 }
                             }
-                            r += utf8_von_codepunkt(codepunkt);
+                            if ((codepunkt >= 0xD800 && codepunkt <= 0xDFFF) || codepunkt > 0x10FFFF) {
+                                r += utf8_von_codepunkt(0xFFFD);
+                            } else {
+                                r += utf8_von_codepunkt(codepunkt);
+                            }
                             i = cursor - 1;
                         } else {
-                            r += '?';
+                            r += utf8_von_codepunkt(0xFFFD);
                         }
                     } else {
-                        r += '?';
+                        r += utf8_von_codepunkt(0xFFFD);
                     }
                     break;
                 }
