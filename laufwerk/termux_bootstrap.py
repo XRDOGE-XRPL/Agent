@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import platform
+import shlex
 import shutil
 import socket
 import subprocess
@@ -184,6 +185,112 @@ def check_ollama_port(url: str) -> Dict[str, object]:
         return {"reachable": False, "host": "127.0.0.1", "port": 11434, "status": "down", "error": str(exc)}
 
 
+def is_proot_available() -> bool:
+    return shutil.which("proot") is not None or shutil.which("proot-distro") is not None
+
+
+def detect_proot_root() -> Optional[str]:
+    candidates = [
+        "/data/data/com.termux/files/usr/bin/proot-distro",
+        "/data/data/com.termux/files/usr/bin/proot",
+        "/usr/bin/proot",
+        "/usr/local/bin/proot",
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def run_host_command(command: str) -> Dict[str, str]:
+    result = subprocess.run(command, shell=True, executable="/bin/bash", capture_output=True, text=True, check=False)
+    return {
+        "returncode": str(result.returncode),
+        "stdout": result.stdout.strip(),
+        "stderr": result.stderr.strip(),
+    }
+
+
+def build_proot_bootstrap_script(repo_url: str, repo_path: str = "/root/Agent", sdk_root: str = "/opt/android-sdk") -> str:
+    script = f"""
+set -e
+export REPO_PATH={repo_path}
+export REPO_URL={repo_url}
+export SDK_ROOT={sdk_root}
+
+if ! command -v proot >/dev/null 2>&1 && ! command -v proot-distro >/dev/null 2>&1; then
+  pkg update -y
+  pkg install -y git wget curl unzip proot proot-distro
+fi
+
+if ! proot-distro list 2>/dev/null | grep -qi debian; then
+  proot-distro install debian
+fi
+
+if [ ! -d "$REPO_PATH" ]; then
+  git clone "$REPO_URL" "$REPO_PATH"
+else
+  git -C "$REPO_PATH" pull --ff-only || true
+fi
+
+proot-distro login debian --user root -- bash -lc '
+  set -e
+  export DEBIAN_FRONTEND=noninteractive
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+  export PATH=$JAVA_HOME/bin:$PATH
+  export ANDROID_SDK_ROOT={sdk_root}
+  export ANDROID_HOME={sdk_root}
+
+  apt-get update
+  apt-get install -y openjdk-21-jdk gradle unzip wget git
+
+  mkdir -p {sdk_root}
+  cd /opt
+  wget -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip || curl -L -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+  unzip -o commandlinetools.zip -d {sdk_root}
+  mkdir -p {sdk_root}/cmdline-tools/latest
+  if [ -d {sdk_root}/cmdline-tools ]; then
+    find {sdk_root}/cmdline-tools -mindepth 1 -maxdepth 1 -exec mv {{}} {sdk_root}/cmdline-tools/latest/ \\; 2>/dev/null || true
+  fi
+
+  yes | {sdk_root}/cmdline-tools/latest/bin/sdkmanager --sdk_root={sdk_root} "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+  printf "sdk.dir={sdk_root}\\n" > "$REPO_PATH"/local.properties
+
+  cd "$REPO_PATH"
+  ./gradlew clean assembleDebug --no-daemon --stacktrace
+'
+"""
+    return script
+
+
+def apply_termux_proot_android_build(repo_url: str = "https://github.com/XRDOGE-XRPL/Agent.git", repo_path: str = "/root/Agent", sdk_root: str = "/opt/android-sdk", quiet: bool = False) -> Dict[str, object]:
+    report: Dict[str, object] = {
+        "termux": detect_termux(),
+        "proot_available": is_proot_available(),
+        "proot_root": detect_proot_root(),
+        "repo_url": repo_url,
+        "repo_path": repo_path,
+        "sdk_root": sdk_root,
+        "status": "not_run",
+        "warnings": [],
+    }
+
+    if not detect_termux():
+        report["status"] = "safe-mode"
+        report["warnings"].append("Not running in Termux; Proot bootstrap is skipped.")
+        return report
+
+    script = build_proot_bootstrap_script(repo_url=repo_url, repo_path=repo_path, sdk_root=sdk_root)
+    if not quiet:
+        print("[termux-bootstrap] provisioning Proot Debian + Android toolchain...")
+    result = run_host_command(script)
+    report["command_result"] = result
+    report["status"] = "success" if int(result["returncode"]) == 0 else "failed"
+    if int(result["returncode"]) != 0:
+        report["warnings"].append("Proot bootstrap failed. See stderr output for details.")
+    return report
+
+
 def bootstrap_runtime(
     install_missing: bool = True,
     install_ollama: bool = True,
@@ -301,7 +408,17 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
     parser.add_argument("--healthcheck", action="store_true", help="run the status/health validation without changing the environment")
+    parser.add_argument("--proot-android-build", action="store_true", help="install the Proot Debian environment, Android SDK, Java toolchain, and build the APK")
+    parser.add_argument("--repo-url", default="https://github.com/XRDOGE-XRPL/Agent.git", help="GitHub repository URL to clone into the Proot Debian environment")
+    parser.add_argument("--repo-path", default="/root/Agent", help="Target repo path inside the Proot Debian environment")
+    parser.add_argument("--sdk-root", default="/opt/android-sdk", help="Android SDK path inside the Proot Debian environment")
     args = parser.parse_args()
+
+    if args.proot_android_build:
+        report = apply_termux_proot_android_build(repo_url=args.repo_url, repo_path=args.repo_path, sdk_root=args.sdk_root, quiet=args.quiet)
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False))
+        return 0
 
     if args.healthcheck:
         report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
@@ -315,7 +432,13 @@ def main() -> int:
             print(json.dumps(report, ensure_ascii=False))
         return 0
 
-    if args.bootstrap or not any((args.check, args.bootstrap, args.healthcheck)):
+    if args.bootstrap:
+        report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False))
+        return 0
+
+    if not any((args.check, args.bootstrap, args.healthcheck, args.proot_android_build)):
         report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
