@@ -2,7 +2,7 @@
 set -eu
 
 REPO_ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="/data/user/0/de.xrdoge.agent/files/werkstatt"
+WORKSPACE_DIR="/werkstatt"
 REQUIRED_DIRS=(src logs appbuilder build)
 
 log() {

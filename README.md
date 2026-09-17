@@ -80,7 +80,7 @@ chmod +x setup_host.sh
 ./setup_host.sh
 ```
 
-Das Skript erstellt automatisch den kompletten Workspace unter `/data/user/0/de.xrdoge.agent/files/werkstatt/` mit den erforderlichen Ordnern `src/`, `logs/`, `appbuilder/` und `build/`. Zusätzlich werden die Fallback-Metadaten `manifest.json`, `state.json` und `memory.json` validiert bzw. bei Bedarf neu generiert. Danach werden `gradlew` und alle internen Build-Skripte mit `chmod +x` freigegeben.
+Das Skript erstellt automatisch den kompletten Workspace unter `/werkstatt/` mit den erforderlichen Ordnern `src/`, `logs/`, `appbuilder/` und `build/`. Zusätzlich werden die Fallback-Metadaten `manifest.json`, `state.json` und `memory.json` validiert bzw. bei Bedarf neu generiert. Danach werden `gradlew` und alle internen Build-Skripte mit `chmod +x` freigegeben.
 
 Für den ARM64-/Android-Build gilt der harte Standard:
 
