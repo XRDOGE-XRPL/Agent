@@ -3,13 +3,14 @@
 ## 2026-09-17
 
 - Finale Audit-Härtung der UI- und Service-Schicht für 6 Tabs, Terminal, Dateibaum, AppBuilder und Memory durchgeführt.
-- `TerminalExecService` gegen leere Stream-Reader, IO-Fehler, Interrupts und Security-Blockaden abgesichert; Ausgaben werden weiter in `logs/terminal_exec.log` geschrieben und in `state.json` synchronisiert.
-- `WorkspaceService` erweitert um defensive Initialisierung, Fallbacks für fehlende Datein und echte `FileObserver`-Registrierung auf dem Workspace-Baum; `FileTreeFragment` nutzt nun einen rekursiven Observer-Mechanismus, der Änderungen im gesamten `/werkstatt/`-Baum triggert.
-- `AppBuilderService` verbessert: Hintergrund-Thread-Run, Pufferung von Build-Output, Status-Callbacks an das UI und robuste Speicherung in `logs/build.log` sowie `state.json`.
-- `MemoryFragment` und `MemoryEntryAdapter` überprüft und stabilisiert: fehlende `memory.json` wird automatisch erzeugt; CRUD-Operationen laufen ohne Crash bei leeren oder beschädigten Dateien weiter.
+- `TerminalExecService` gegen leere Stream-Reader, IO-Fehler, Interrupts und Security-Blockaden abgesichert; Ausgaben werden in `logs/terminal_exec.log` mit Rotation geschrieben und in `state.json` synchronisiert.
+- `WorkspaceService` erweitert um defensive Initialisierung, robuste JSON-Validierung für `memory.json`, automatische Standarddateien und rekursive `FileObserver`-Registrierung; `FileTreeFragment` räumt Watcher im Lifecycle sauber auf.
+- `AppBuilderService` verbessert: Shell- und Gradle-Ausführung mit Umgebungsvariablen, Exit-Code-Checks, Status-Callbacks an das UI und robuste Speicherung in `logs/build.log` samt Fehlerweitergabe.
+- `MemoryFragment` und `MemoryEntryAdapter` stabilisiert: fehlende bzw. beschädigte `memory.json` werden automatisch korrigiert; CRUD-Operationen laufen ohne Crash weiter und melden ungültige Daten über eine Validierungsnachricht.
 - XML-/View-Mapping für alle sechs Fragment-Klassen erneut validiert und keine uninitialisierten IDs identifiziert.
 - Dokumentations- und Repo-Review abgeschlossen; `README.md`, `ARCHITECTURE.md`, `PROJECT_OVERVIEW.md` und `CHANGELOG.md` auf den aktuellen Service- und UI-Stand abgestimmt.
-- Build-Validierung mit `./gradlew assembleDebug` wiederholt; die Sandbox bleibt durch das Android-Plugin-Repository / AGP-Resolver-Problem blockiert, nicht durch Projekt-Logikfehler.
+- Android Gradle Plugin auf AGP `8.7.3` korrigiert, um den dokumentierten kompatiblen Toolchain-Stack zu alignen.
+- Build-Validierung mit `./gradlew tasks --all` wiederholt; der Gradle-Lauf scheitert in der Sandbox weiterhin am externen Plugin-Repository-Zugriff, nicht am Projektcode selbst.
 
 ## 1.0.0
 

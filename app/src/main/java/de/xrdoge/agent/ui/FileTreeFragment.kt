@@ -5,9 +5,12 @@ import android.os.FileObserver
 import android.view.View
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import de.xrdoge.agent.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 class FileTreeFragment : Fragment(R.layout.fragment_file_tree) {
@@ -34,19 +37,19 @@ class FileTreeFragment : Fragment(R.layout.fragment_file_tree) {
         refreshTree()
         fileContent.text = "Dateinamen anklicken, um Inhalt anzuzeigen."
 
-        stopObservers()
+        WorkspaceService.stopRecursiveObserver(observers)
         observers.addAll(WorkspaceService.startRecursiveObserver(workspaceRoot) {
-            activity?.runOnUiThread { refreshTree() }
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) { refreshTree() }
         })
     }
 
-    private fun stopObservers() {
-        observers.forEach { it.stopWatching() }
-        observers.clear()
+    override fun onStop() {
+        WorkspaceService.stopRecursiveObserver(observers)
+        super.onStop()
     }
 
     override fun onDestroyView() {
-        stopObservers()
+        WorkspaceService.stopRecursiveObserver(observers)
         super.onDestroyView()
     }
 }

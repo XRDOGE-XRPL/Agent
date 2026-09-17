@@ -11,11 +11,7 @@ class AppBuilderService(
     private val workspaceRoot: File
 ) {
     fun runBuild(taskName: String, onStatus: ((String) -> Unit)? = null): String {
-        val root = try {
-            WorkspaceService.ensureWorkspaceDirectories(workspaceRoot)
-        } catch (_: SecurityException) {
-            workspaceRoot
-        }
+        val root = WorkspaceService.ensureWorkspaceDirectories(workspaceRoot)
         val buildDir = File(root, "build")
         buildDir.mkdirs()
 
@@ -28,22 +24,24 @@ class AppBuilderService(
         WorkspaceService.appendAgentLog(root, initialStatus)
         WorkspaceService.updateState(root, mapOf("buildStatus" to initialStatus))
 
-        val scriptCandidates = listOf(
-            File(root, "build_apk.sh"),
-            File(root, "gradlew"),
-            File(root, "src")
-        )
+        val gradlew = File(root, "gradlew")
+        val buildScript = File(root, "build_apk.sh")
         val command = when {
-            scriptCandidates[0].exists() -> "bash ${scriptCandidates[0].absolutePath}"
-            scriptCandidates[1].exists() -> "cd ${root.absolutePath} && ./gradlew assembleDebug --no-daemon"
+            buildScript.exists() -> "bash ${buildScript.absolutePath}"
+            gradlew.exists() -> "cd ${root.absolutePath} && chmod +x ${gradlew.absolutePath} && ${gradlew.absolutePath} assembleDebug --no-daemon"
             else -> "printf '%s\\n' 'workspace build scaffold ready for $taskLabel'"
         }
 
         return try {
-            val process = ProcessBuilder(if (File("/system/bin/sh").exists()) "/system/bin/sh" else "/bin/sh", "-c", command)
+            val shell = if (File("/system/bin/sh").exists()) "/system/bin/sh" else "/bin/sh"
+            val processBuilder = ProcessBuilder(shell, "-c", command)
                 .directory(root)
                 .redirectErrorStream(true)
-                .start()
+            val env = processBuilder.environment()
+            env["WORKSPACE_ROOT"] = root.absolutePath
+            env["PROJECT_DIR"] = root.absolutePath
+            env["TERM"] = "xterm"
+            val process = processBuilder.start()
 
             val output = StringBuilder()
             val logLines = mutableListOf<String>()
@@ -80,7 +78,7 @@ class AppBuilderService(
                     Charsets.UTF_8
                 )
             } catch (_: IOException) {
-                // ignore build report failures without crashing the app
+                // Ignore build report failures without crashing the app.
             }
 
             WorkspaceService.exportLog(root, "build.log", logLines.ifEmpty { listOf(buildOutput) })

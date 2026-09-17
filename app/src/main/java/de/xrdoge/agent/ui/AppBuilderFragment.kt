@@ -5,9 +5,13 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import de.xrdoge.agent.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class AppBuilderFragment : Fragment(R.layout.fragment_app_builder) {
@@ -30,15 +34,14 @@ class AppBuilderFragment : Fragment(R.layout.fragment_app_builder) {
 
         view.findViewById<Button>(R.id.appBuilderRunButton).setOnClickListener {
             val service = AppBuilderService(workspaceRoot)
-            Thread {
-                val result = service.runBuild("workspace build") { message ->
-                    requireActivity().runOnUiThread { status.text = message }
+            viewLifecycleOwner.lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    service.runBuild("workspace build") { message ->
+                        launch(Dispatchers.Main) { status.text = message }
+                    }
                 }
-                requireActivity().runOnUiThread {
-                    status.text = result
-                    refreshArtifacts()
-                }
-            }.start()
+                refreshArtifacts()
+            }
         }
     }
 }
