@@ -1,6 +1,6 @@
-dateisystem_test 4 0.00110925
-json_protokoll_test 4 0.000415942
-git_befehl_test 4 0.000360684
-http_url_test 4 0.000361643
-schleife_mock_test 4 1.43696
+dateisystem_test 5 0.00105666
+json_protokoll_test 5 0.000363218
+git_befehl_test 5 0.000321129
+http_url_test 5 0.000333625
+schleife_mock_test 5 0.197155
 ---
