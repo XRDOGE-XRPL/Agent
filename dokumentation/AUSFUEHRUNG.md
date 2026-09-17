@@ -21,7 +21,7 @@ Die folgenden Voraussetzungen variieren je nach Betriebsart:
 
 ### Für Ollama-Integration
 
-- Ollama lokal erreichbar
+- Ollama muss in der Proot-Debian-Umgebung lokal erreichbar sein
 - Modell installiert, z. B. `llama3.2`
 - Öffentliche oder lokale URL, z. B. `http://127.0.0.1:11434`
 
@@ -80,11 +80,11 @@ Der Runner akzeptiert dieselben grundlegenden Einheiten:
 - Aufgabe an den Agenten
 - Modell und URL
 - maximale Iterationen
-- optionaler `--offline`-Modus
+- `--offline` nur als Notfallfallback, nicht als Standardmodus
 
 ### Ollama-Verfügbarkeit
 
-Damit der Agent mit einem echten Modell arbeitet, muss Ollama auf dem Gerät lokal laufen oder von der Umgebung erreichbar sein. Für Android-Emulatoren und Host-Maschinen ist die Standard-Umgebung oft:
+Damit der Agent mit einem echten Modell arbeitet, muss Ollama in der Proot-Debian-Umgebung lokal laufen und dort erreichbar sein. Für Android-Emulatoren und Host-Maschinen ist die Standard-Umgebung oft:
 
 - Host: `127.0.0.1`
 - Emulator: `10.0.2.2`
@@ -127,7 +127,7 @@ agentenlauf \
   --max-iterationen 8
 ```
 
-Falls kein LLM verfügbar ist, kann der Agent in einem Offline-/Testmodus gestartet werden:
+Falls Ollama ausfällt, kann der Agent nur noch als Ausweichlauf in einem Offline-/Testmodus gestartet werden. Der normale Betrieb bleibt immer mit Ollama in Proot.
 
 ```text
 agentenlauf --arbeitsverzeichnis /workspace/mein-projekt --aufgabe "Erstelle ein Testprojekt" --offline
@@ -150,7 +150,7 @@ Die CLI-Befehle und Laufvarianten sind bewusst einfach gehalten:
 
 - lokale Build- und Testausführung mit CMake/CTest
 - Android-Build- und Testausführung mit Gradle
-- optionales LLM über Ollama
+- fester LLM-Lauf über Ollama in Proot
 - Termux-Runner für mobile und eingeschränkte Umgebungen
 
 ## 8. Fehlerbehandlung und Troubleshooting
@@ -159,10 +159,10 @@ Die CLI-Befehle und Laufvarianten sind bewusst einfach gehalten:
 
 Wenn der LLM-Endpunkt nicht erreichbar ist:
 
-- prüfen, ob Ollama gestartet ist
+- prüfen, ob Ollama in der Proot-Umgebung gestartet ist
 - URL und Port prüfen
-- Modell installiert haben
-- `--offline` verwenden, falls nur ein lokaler Build/Test erfolgen soll
+- Modell in Proot installiert haben
+- nur als Notfall `--offline` verwenden, aber nicht im regulären Betrieb
 
 ### Probleme mit dem Build
 

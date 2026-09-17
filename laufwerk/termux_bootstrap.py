@@ -242,7 +242,12 @@ proot-distro login debian --user root -- bash -lc '
   export ANDROID_HOME={sdk_root}
 
   apt-get update
-  apt-get install -y openjdk-21-jdk gradle unzip wget git
+  apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates
+
+  curl -fsSL https://ollama.com/install.sh | sh
+  nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
+  sleep 5
+  ollama pull llama3.2 || true
 
   mkdir -p {sdk_root}
   cd /opt
@@ -253,7 +258,7 @@ proot-distro login debian --user root -- bash -lc '
     find {sdk_root}/cmdline-tools -mindepth 1 -maxdepth 1 -exec mv {{}} {sdk_root}/cmdline-tools/latest/ \\; 2>/dev/null || true
   fi
 
-  yes | {sdk_root}/cmdline-tools/latest/bin/sdkmanager --sdk_root={sdk_root} "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+  yes | {sdk_root}/cmdline-tools/latest/bin/sdkmanager --sdk_root={sdk_root} "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.1.12297006"
   printf "sdk.dir={sdk_root}\\n" > "$REPO_PATH"/local.properties
 
   cd "$REPO_PATH"

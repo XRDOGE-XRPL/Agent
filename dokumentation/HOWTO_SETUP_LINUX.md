@@ -2,7 +2,7 @@
 
 ## Ziel
 
-Dieses Dokument beschreibt den vollständigen Setup-Pfad für die lokale Ausführung des Agenten auf Linux. Es zeigt, wie das Repository vorbereitet, kompiliert, getestet und gestartet wird. Die Anleitung deckt den nativen C++-Workflow, den optionalen Ollama-/LLM-Lauf und die Termux-/Bootstrap-Variante ab.
+Dieses Dokument beschreibt den vollständigen Setup-Pfad für die lokale Ausführung des Agenten auf Linux. Es zeigt, wie das Repository in der Proot-Debian-Umgebung vorbereitet, kompiliert, getestet und gestartet wird. Der Projektstandard ist ein fester Ollama-/LLM-Lauf innerhalb derselben Proot-Umgebung; der Termux-Host dient nur als Launcher.
 
 ## 1. Voraussetzungen
 
@@ -13,8 +13,9 @@ Vor dem Start sollten diese Pakete installiert sein:
 - C++20-Compiler, z. B. `gcc` oder `clang`
 - Make oder Ninja
 - Python 3
-- Optional: Java 17+ und Android SDK, falls Android-Tests oder App-Builds benötigt werden
-- Optional: Ollama, falls ein lokales Modell verwendet werden soll
+- Java 21 in Proot-Debian
+- Android SDK + NDK unter `/opt/android-sdk`
+- Ollama als fester Bestandteil der Proot-Umgebung
 
 Prüfen:
 
@@ -88,13 +89,14 @@ Beispiel ohne Ollama:
 
 ## 5. Ollama lokal einrichten
 
-Wenn ein echtes LLM verwendet werden soll, muss Ollama lokal erreichbar sein.
+Für den Projektsandard muss Ollama in der Proot-Debian-Umgebung lokal erreichbar sein.
 
-### 5.1 Ollama starten
+### 5.1 Ollama in Proot starten
 
 ```bash
+curl -fsSL https://ollama.com/install.sh | sh
 ollama pull llama3.2
-ollama serve
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
 ```
 
 Danach ist der Standard-Endpunkt in der Regel:
@@ -109,7 +111,7 @@ http://127.0.0.1:11434
 ./build-native/agentenlauf --arbeitsverzeichnis "$HOME/workspace/mein-projekt" --aufgabe "Erstelle ein kleines Testprojekt und prüfe den Build" --ollama-url http://127.0.0.1:11434 --modell llama3.2
 ```
 
-Wenn Ollama nicht läuft, muss der Agent entweder in `--offline`-Modus gestartet oder vorher das Modell installiert werden.
+Wenn Ollama nicht läuft, muss die Proot-Umgebung zuerst neu initialisiert und das Modell geladen werden. Der `--offline`-Modus ist nur Ersatz für Ausnahmen, nicht der Standardpfad.
 
 ## 6. Android-Setup auf Linux
 
@@ -222,7 +224,7 @@ Das ist beabsichtigt. Der Agent darf nur im konfigurierten Arbeitsbereich schrei
 2. Abhängigkeiten installieren
 3. CMake- und CTest-Build ausführen
 4. CLI mit Aufgabenbeschreibung starten
-5. Optional: Ollama starten und Modell verwenden
+5. Ollama in Proot starten und das Modell laden
 6. Bei Android: SDK in `local.properties` setzen und Gradle-Tests ausführen
 
 Damit ist der Setup-Pfad auf Linux vollständig und ohne offene Fragen nutzbar.

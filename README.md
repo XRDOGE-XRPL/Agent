@@ -6,7 +6,7 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 
 - Lokale C++-CLI-Ausführung auf Windows, Linux und Termux
 - Android-Integration mit Kotlin/Compose und native C++-Komponenten
-- Offline- und Online-Modus mit optionalem lokalen LLM-Backend
+- Proot-Debian-Stack mit fester Ollama-LLM-Integration im gleichen Userland
 
 ## Kernfunktionen
 
@@ -85,22 +85,22 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 - CMake 3.16+
 - C++20-Compiler
 - Git
-- Optional: Android SDK + NDK für App-Builds
-- Optional: Java 17 + Gradle / Android Studio
-- Optional: Ollama mit lokalem Modell für echte LLM-Aktivierung
+- Java 21 und Gradle in der Proot-Debian-Umgebung
+- Android SDK + NDK unter `/opt/android-sdk`
+- Ollama als fester Bestandteil der Proot-Umgebung
 
 ### Erforderlich für Android
 
-- Android SDK
+- Android SDK unter `/opt/android-sdk`
 - Android NDK 27.1.12297006
-- Compile SDK 35
-- Kotlin/Compose Plug-ins und Android Gradle Plugin
+- Compile SDK 34 / Build-Tools 34.0.0
+- Kotlin/Compose Plug-ins und Android Gradle Plugin 8.7.3
 
-### Optional
+### Proot-Debian-Standard
 
-- Ollama auf `http://127.0.0.1:11434` oder einer erreichbaren lokalen Adresse
-- Modell wie `llama3.2`
-- Termux auf Android-Geräten
+- Ollama läuft im selben Debian-Proot-Userland auf `http://127.0.0.1:11434`
+- Modell wie `llama3.2` wird automatisch oder manuell geladen
+- Termux dient nur als Host-/Launcher-Schicht; die eigentliche Projekt- und Build-Logik läuft in Proot
 
 ## Schnellstart
 

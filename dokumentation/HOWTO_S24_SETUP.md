@@ -136,7 +136,7 @@ oder:
 bash skripte/termux_setup.sh
 ```
 
-Der Bootstrap prüft automatisch die Termux-/Android-Umgebung, installiert fehlende Basis-Pakete (`git`, `cmake`, `clang`, `python`, `make`, `curl`, `wget`, `openssl`, `termux-api`, optional `nodejs`/`jq`), erstellt `~/.agent` für Konfiguration und Runtime-Status und prüft die Ollama-/Socket-Umgebung mit Safe-Mode-Fallback.
+Der Bootstrap prüft automatisch die Termux-/Android-Umgebung, installiert fehlende Basis-Pakete (`git`, `cmake`, `clang`, `python`, `make`, `curl`, `wget`, `openssl`, `termux-api`, `nodejs`, `jq`), erstellt `~/.agent` für Konfiguration und Runtime-Status, initialisiert die Proot-Debian-Umgebung und startet Ollama dort als festen Bestandteil des Laufzeitstacks.
 
 ### 4.3 Grundpakete manuell installieren
 
@@ -145,7 +145,7 @@ pkg update
 pkg install git curl cmake clang python make openssh
 ```
 
-Optional sinnvoll:
+Empfohlen für die Proot-Umgebung:
 
 ```bash
 pkg install nodejs-lts wget vim
@@ -165,12 +165,13 @@ Es gibt zwei praktische Wege:
 1. Offizielle Ollama-Installation auf dem Android-Gerät
 2. Lokaler Ollama-Server im Termux-Container, sofern die lokale Runtime dafür unterstützt wird
 
-### 5.1 Installationspfad A: Ollama-Installer
+### 5.1 Installationspfad A: Ollama im Proot-Debian
 
-Wenn der Offizielle Ollama-Installer für Android/Termux verfügbar ist:
+Dort, wo das Projekt wirklich ausgeführt wird, muss Ollama im Proot-Debian-Userland laufen:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
 ```
 
 Danach prüfen:

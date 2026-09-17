@@ -2,7 +2,7 @@
 
 ## Ziel
 
-Dieses Dokument beschreibt den vollständigen Setup-Pfad für lokale Entwicklung auf Windows. Es zeigt, wie das Repository vorbereitet, gebaut, getestet und mit dem Agenten gestartet wird. Die Anleitungen decken den nativen C++-Workflow, den Android-Zusatzpfad und den optionalen Ollama-/LLM-Lauf ab.
+Dieses Dokument beschreibt den vollständigen Setup-Pfad für lokale Entwicklung auf Windows. Es zeigt, wie das Repository in der Proot-Debian-Umgebung vorbereitet, gebaut, getestet und mit dem Agenten gestartet wird. Der Projektstandard ist ein fester Ollama-/LLM-Lauf innerhalb derselben Proot-Umgebung; der Host bleibt nur Launcher.
 
 ## 1. Voraussetzungen
 
@@ -11,10 +11,11 @@ Vor dem Start sollten diese Tools installiert sein:
 - Git
 - CMake 3.16+
 - C++20-Compiler
-- Optional: MinGW/MSYS2 oder Visual Studio Build Tools
-- Optional: Python 3, wenn der lokale Runner oder Bootstrap verwendet wird
-- Optional: Java 17+ und Android SDK, falls Android-Unit-Tests oder App-Builds benötigt werden
-- Optional: Ollama, falls ein echtes lokales Modell verwendet werden soll
+- MinGW/MSYS2 oder Visual Studio Build Tools
+- Python 3, wenn der lokale Runner oder Bootstrap verwendet wird
+- Java 21 in Proot-Debian
+- Android SDK + NDK unter `/opt/android-sdk`
+- Ollama als fester Bestandteil der Proot-Umgebung
 
 Prüfen, ob die wichtigsten Werkzeuge bereits vorhanden sind:
 
@@ -91,13 +92,14 @@ Beispiel ohne Ollama:
 
 ## 5. Ollama lokal einrichten
 
-Wenn ein echtes LLM verwendet werden soll, muss Ollama lokal erreichbar sein.
+Für den Projektsandard muss Ollama in der Proot-Debian-Umgebung lokal erreichbar sein.
 
-### 5.1 Ollama installieren und starten
+### 5.1 Ollama in Proot installieren und starten
 
-```powershell
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
 ollama pull llama3.2
-ollama serve
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
 ```
 
 Nach dem Start lauscht Ollama typischerweise auf:
@@ -112,7 +114,7 @@ http://127.0.0.1:11434
 ./build-native/agentenlauf.exe --arbeitsverzeichnis C:/workspace/mein-projekt --aufgabe "Erstelle ein kleines Testprojekt und prüfe den Build" --ollama-url http://127.0.0.1:11434 --modell llama3.2
 ```
 
-Wenn Ollama nicht installiert ist oder nicht läuft, muss man entweder `--offline` verwenden oder zuerst das lokale Modell starten.
+Wenn Ollama nicht installiert ist oder nicht läuft, muss die Proot-Umgebung zuerst aktualisiert und das Modell geladen werden. Der Offline-Modus dient nur als Notfallpfad, nicht als Normalbetrieb.
 
 ## 6. Android-Setup auf Windows
 
@@ -228,7 +230,7 @@ Das ist beabsichtigt und Teil der Sicherheitslogik. Der Agent darf nur innerhalb
 2. CMake/Compiler installieren
 3. Projekt bauen und testen
 4. CLI mit Aufgabenbeschreibung starten
-5. Optional: Ollama starten und Modell verwenden
+5. Ollama in Proot starten und das Modell laden
 6. Bei Android: SDK in `local.properties` setzen und Gradle-Tests ausführen
 
 Damit ist der Setup-Pfad auf Windows vollständig und ohne offene Unklarheiten nutzbar.
