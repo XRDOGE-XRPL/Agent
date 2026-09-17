@@ -71,6 +71,30 @@ Darüber hinaus werden persistente Metadaten und Dokumentationsdateien verwaltet
 6. Anpassungen an `memory.json` werden direkt im Memory-Tab persistiert.
 7. Build-Skripte werden im Background-Thread gestartet und die Artefaktliste aktualisiert.
 
+## Host-Setup für Termux / Android
+
+Das Repository enthält ein direkt auf dem Android-Host ausführbares Bootstrap-Skript:
+
+```bash
+chmod +x setup_host.sh
+./setup_host.sh
+```
+
+Das Skript erstellt automatisch den kompletten Workspace unter `/werkstatt/` mit den erforderlichen Ordnern `src/`, `logs/`, `appbuilder/` und `build/`. Zusätzlich werden die Fallback-Metadaten `manifest.json`, `state.json` und `memory.json` validiert bzw. bei Bedarf neu generiert. Danach werden `gradlew` und alle internen Build-Skripte mit `chmod +x` freigegeben.
+
+Für den ARM64-/Android-Build gilt der harte Standard:
+
+```bash
+./gradlew clean assembleDebug --no-daemon
+```
+
+Die `gradle.properties` aktivieren dabei dauerhaft:
+
+- `android.aapt2.daemon.enabled=false`
+- `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2` (Fallback auf `34.0.0`, falls nur diese SDK-Version installiert ist)
+
+Damit werden Build-Abbrüche in restriktiven ARM64-Umgebungen unterdrückt und das native Lib-Verzeichnis `app/src/main/jniLibs/arm64-v8a` sauber eingebunden.
+
 ## Aufbau des Repositories
 
 ```text

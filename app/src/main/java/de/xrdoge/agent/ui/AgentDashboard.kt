@@ -117,7 +117,7 @@ fun AgentDashboard(
     var aufgabe by remember { mutableStateOf("") }
     var verzeichnis by remember { mutableStateOf(workspace) }
     var ollama by remember { mutableStateOf("http://127.0.0.1:11434") }
-    var modell by remember { mutableStateOf("llama3.2") }
+    var modell by remember { mutableStateOf("qwen2.5-coder") }
     var iterationen by remember { mutableStateOf("8") }
     var provider by remember { mutableStateOf("local") }
     var ttlMinutes by remember { mutableStateOf("30") }

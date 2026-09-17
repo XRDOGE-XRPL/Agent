@@ -159,7 +159,7 @@ def main() -> int:
     parser.add_argument("--arbeitsverzeichnis", required=True)
     parser.add_argument("--aufgabe", required=True)
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
-    parser.add_argument("--modell", default="llama3.2")
+    parser.add_argument("--modell", default="qwen2.5-coder")
     parser.add_argument("--max-iterationen", type=int, default=8)
     parser.add_argument("--offline", action="store_true", help="skip Ollama requests and operate in local-safe offline mode")
     parser.add_argument("--bootstrap", action="store_true", help="run Termux bootstrap before the agent starts")

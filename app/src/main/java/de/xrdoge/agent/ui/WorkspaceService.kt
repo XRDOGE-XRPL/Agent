@@ -52,7 +52,7 @@ object WorkspaceService {
                     put("agentStatus", "ready")
                     put("lastUpdated", System.currentTimeMillis())
                     put("provider", "local")
-                    put("model", "llama3.2")
+                    put("model", "qwen2.5-coder")
                     put("iterations", 8)
                     put("ttlMinutes", 30)
                 }
