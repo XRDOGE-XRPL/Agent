@@ -2,6 +2,6 @@ system=initialized
 workspace=/werkstatt
 status=ready
 provider=local
-model=llama3.2
+model=qwen2.5-coder
 iterations=8
 ttlMinutes=30

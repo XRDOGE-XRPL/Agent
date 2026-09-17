@@ -34,7 +34,7 @@ class LogStreamManagerTest {
             arbeitsverzeichnis = ".",
             aufgabe = "probe runtime",
             ollamaUrl = "http://127.0.0.1:11434",
-            modell = "llama3.2",
+            modell = "qwen2.5-coder",
             maxIterationen = 1
         )
 

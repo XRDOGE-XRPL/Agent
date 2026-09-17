@@ -36,7 +36,7 @@ class AgentSchleife(
                 pfad,
                 aufgabe.ifBlank { "No task provided" },
                 ollamaUrl.ifBlank { "http://127.0.0.1:11434" },
-                modell.ifBlank { "llama3.2" },
+                modell.ifBlank { "qwen2.5-coder" },
                 iterationen
             )
         }

@@ -28,7 +28,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         WorkspaceService.ensureWorkspaceDirectories(workspaceRoot)
         workspaceField.setText(workspaceRoot.absolutePath)
         ollamaField.setText("http://127.0.0.1:11434")
-        modelField.setText("llama3.2")
+        modelField.setText("qwen2.5-coder")
         iterationsField.setText("8")
         providerField.setText("local")
         ttlField.setText("30")

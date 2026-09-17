@@ -15,7 +15,7 @@ void hilfe() {
               << "  agentenlauf --arbeitsverzeichnis <pfad> --aufgabe <text> [optionen]\n"
               << "Optionen:\n"
               << "  --ollama-url <url>     Standard: http://127.0.0.1:11434\n"
-              << "  --modell <name>        Standard: llama3.2\n"
+              << "  --modell <name>        Standard: qwen2.5-coder\n"
               << "  --max-iterationen <n>  Standard: 8\n"
               << "  --git-commits          Erlaubt git commit\n"
               << "  --offline              Keine Netzwerkanfragen\n"

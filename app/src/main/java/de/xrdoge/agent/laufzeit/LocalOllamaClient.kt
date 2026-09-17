@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 
 class LocalOllamaClient(
     private val baseUrl: String = "http://127.0.0.1:11434",
-    private val model: String = "llama3.2",
+    private val model: String = "qwen2.5-coder",
     private val bridge: LocalSocketBridge = LocalSocketBridge(),
     private val logStream: LogStreamManager? = null
 ) {

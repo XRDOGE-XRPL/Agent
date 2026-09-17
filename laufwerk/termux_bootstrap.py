@@ -40,7 +40,7 @@ DEFAULT_CONFIG = {
     "termux": False,
     "workspace": "~/workspace",
     "ollama_url": "http://127.0.0.1:11434",
-    "model": "llama3.2",
+    "model": "qwen2.5-coder",
     "port": 5050,
     "socket_host": "127.0.0.1",
     "timeout_seconds": 120,
@@ -277,7 +277,7 @@ proot-distro login debian --user root -- bash -lc '
   curl -fsSL https://ollama.com/install.sh | sh
   nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
   sleep 5
-  ollama pull llama3.2 || true
+  ollama pull qwen2.5-coder || true
 
   mkdir -p {sdk_root}
   cd /opt
@@ -333,7 +333,7 @@ def bootstrap_runtime(
     install_ollama: bool = True,
     workspace: Optional[str] = None,
     ollama_url: str = "http://127.0.0.1:11434",
-    model: str = "llama3.2",
+    model: str = "qwen2.5-coder",
     quiet: bool = False,
 ) -> Dict[str, object]:
     termux_mode = detect_termux()
@@ -441,7 +441,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="run a status check without installing packages")
     parser.add_argument("--workspace", default=str(Path.home() / "workspace"), help="workspace directory used by the agent")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434", help="Ollama URL for the local runtime")
-    parser.add_argument("--model", default="llama3.2", help="default model name")
+    parser.add_argument("--model", default="qwen2.5-coder", help="default model name")
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
     parser.add_argument("--healthcheck", action="store_true", help="run the status/health validation without changing the environment")

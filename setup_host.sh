@@ -46,7 +46,7 @@ ensure_metadata() {
   "lastUpdated": "$timestamp",
   "agent": {
     "provider": "local",
-    "model": "llama3.2",
+    "model": "qwen2.5-coder",
     "iterations": 8,
     "ttlMinutes": 30
   }
@@ -61,7 +61,7 @@ EOF
   "agentStatus": "ready",
   "lastUpdated": "$timestamp",
   "provider": "local",
-  "model": "llama3.2",
+  "model": "qwen2.5-coder",
   "iterations": 8,
   "ttlMinutes": 30,
   "buildStatus": "ready",
@@ -79,7 +79,7 @@ EOF
   "workspace": "$WORKSPACE_DIR",
   "status": "ready",
   "provider": "local",
-  "model": "llama3.2",
+  "model": "qwen2.5-coder",
   "iterations": 8,
   "ttlMinutes": 30,
   "entries": {},
