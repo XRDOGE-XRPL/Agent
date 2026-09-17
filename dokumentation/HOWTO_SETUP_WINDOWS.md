@@ -129,7 +129,7 @@ sdk.dir=/opt/android-sdk
 Beispiel:
 
 ```properties
-sdk.dir=C\:/Users/Max/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 ### 6.2 App-Build und Tests

@@ -315,3 +315,20 @@ EOF
 
 Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
 
+
+
+## Proot-Debian-Workflow
+
+Der Android-App-Build darf ausschließlich in einer isolierten Proot-Debian-Userland-Umgebung laufen. Der Termux-Host selbst bleibt für den APK-Build nicht nutzbar, weil Bionic-C- und Perfetto-JNI-Restriktionen zu SIGABRT/Gradle-Lifecycle-Abbrüchen führen.
+
+```bash
+apt-get update
+apt-get install -y openjdk-21-jdk gradle unzip wget git
+mkdir -p /opt/android-sdk
+cat > local.properties <<'EOF'
+sdk.dir=/opt/android-sdk
+EOF
+./build_apk.sh
+```
+
+Erforderliche SDK-Komponenten: `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`, `ndk;27.1.12297006`.

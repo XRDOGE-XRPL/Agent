@@ -95,13 +95,13 @@ sdk.dir=/opt/android-sdk
 Beispiel:
 
 ```properties
-sdk.dir=C\:/Users/Max/AppData/Local/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 Auf Linux/macOS:
 
 ```properties
-sdk.dir=/home/benutzer/Android/Sdk
+sdk.dir=/opt/android-sdk
 ```
 
 ### 3.3 Projekt aufbauen
