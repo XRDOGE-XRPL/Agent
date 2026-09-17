@@ -33,6 +33,14 @@ int main() {
         std::cerr << "defektes-unicode-hex-fehlerhaft\n";
         return 1;
     }
+    if (agent::json::string_feld("{\"status\":\"A\\xB\"}", "status").value_or("") != "A�B") {
+        std::cerr << "defektes-escape-fehlerhaft\n";
+        return 1;
+    }
+    if (agent::json::string_feld("{\"status\":\"A", "status").value_or("") != "A") {
+        std::cerr << "teilweise-zeichenkette-fehlerhaft\n";
+        return 1;
+    }
 
     const std::string antwort =
         "Hier JSON:\n{\"schritte\":[{\"aktion\":\"schreiben\",\"pfad\":\"a.txt\","

@@ -127,7 +127,10 @@ class OllamaKlient(
                                 val ch = json[nach]
                                 when {
                                     ch == '\\' -> {
-                                        if (nach + 1 >= json.length) return null
+                                        if (nach + 1 >= json.length) {
+                                            inhalt.append('\uFFFD')
+                                            return inhalt.toString().ifEmpty { null }
+                                        }
                                         when (val escaped = json[nach + 1]) {
                                             'b' -> inhalt.append('\b').also { nach += 2 }
                                             'f' -> inhalt.append('\u000C').also { nach += 2 }
@@ -150,7 +153,7 @@ class OllamaKlient(
                                                 }
                                             }
                                             else -> {
-                                                inhalt.append(escaped)
+                                                inhalt.append('\uFFFD')
                                                 nach += 2
                                             }
                                         }
@@ -162,7 +165,7 @@ class OllamaKlient(
                                     }
                                 }
                             }
-                            return null
+                            return inhalt.toString().ifEmpty { null }
                         }
                     }
                 }
