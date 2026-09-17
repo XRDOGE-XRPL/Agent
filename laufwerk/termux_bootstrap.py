@@ -80,6 +80,35 @@ def detect_memory_mb() -> Optional[int]:
         return None
 
 
+def detect_java_home() -> Optional[str]:
+    candidates = [
+        os.environ.get("JAVA_HOME"),
+        "/usr/lib/jvm/java-21-openjdk-amd64",
+        "/usr/lib/jvm/java-21-openjdk-arm64",
+        "/usr/lib/jvm/java-21-openjdk",
+        "/usr/lib/jvm/java-17-openjdk-amd64",
+        "/usr/lib/jvm/java-17-openjdk-arm64",
+        "/usr/lib/jvm/default-java",
+        "/usr/lib/jvm/default",
+    ]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        java_bin = Path(candidate) / "bin" / ("java.exe" if os.name == "nt" else "java")
+        if java_bin.exists() and java_bin.is_file():
+            return str(Path(candidate).resolve())
+
+    java_cmd = shutil.which("java")
+    if java_cmd:
+        resolved = Path(java_cmd).resolve()
+        if resolved.name == "java":
+            java_home = resolved.parent.parent
+            if java_home.exists():
+                return str(java_home)
+
+    return None
+
+
 def run_command(command: List[str], allow_failure: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(command, capture_output=True, text=True, check=False)
 
@@ -212,6 +241,7 @@ def run_host_command(command: str) -> Dict[str, str]:
 
 
 def build_proot_bootstrap_script(repo_url: str, repo_path: str = "/root/Agent", sdk_root: str = "/opt/android-sdk") -> str:
+    java_home = detect_java_home() or "/usr/lib/jvm/java-21-openjdk-amd64"
     script = f"""
 set -e
 export REPO_PATH={repo_path}
@@ -236,7 +266,7 @@ fi
 proot-distro login debian --user root -- bash -lc '
   set -e
   export DEBIAN_FRONTEND=noninteractive
-  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+  export JAVA_HOME={java_home}
   export PATH=$JAVA_HOME/bin:$PATH
   export ANDROID_SDK_ROOT={sdk_root}
   export ANDROID_HOME={sdk_root}
