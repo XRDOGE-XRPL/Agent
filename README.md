@@ -323,7 +323,10 @@ Der Android-App-Build darf ausschließlich in einer isolierten Proot-Debian-User
 
 ```bash
 apt-get update
-apt-get install -y openjdk-21-jdk gradle unzip wget git
+apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates
+curl -fsSL https://ollama.com/install.sh | sh
+nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
+ollama pull llama3.2
 mkdir -p /opt/android-sdk
 cat > local.properties <<'EOF'
 sdk.dir=/opt/android-sdk
@@ -332,3 +335,4 @@ EOF
 ```
 
 Erforderliche SDK-Komponenten: `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`, `ndk;27.1.12297006`.
+Ollama ist im Proot-Debian-Userland zwingend aktiv und nicht optional.
