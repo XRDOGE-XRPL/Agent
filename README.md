@@ -67,9 +67,16 @@ Der Schwerpunkt liegt auf drei Nutzungsszenarien:
 ├── dokumentation/
 │   ├── ARCHITEKTUR.md
 │   ├── AUSFUEHRUNG.md
+│   ├── HOWTO_SETUP_WINDOWS.md
+│   ├── HOWTO_SETUP_LINUX.md
 │   └── VALIDIERUNG.md
 └── ...
 ```
+
+## Setup-HOWTOs
+
+- [HowtoSetup on Windows](dokumentation/HOWTO_SETUP_WINDOWS.md)
+- [HowtoSetup on Linux](dokumentation/HOWTO_SETUP_LINUX.md)
 
 ## Abhängigkeiten
 

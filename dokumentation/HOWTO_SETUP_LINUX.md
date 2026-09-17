@@ -1,0 +1,228 @@
+# HowtoSetup on Linux
+
+## Ziel
+
+Dieses Dokument beschreibt den vollständigen Setup-Pfad für die lokale Ausführung des Agenten auf Linux. Es zeigt, wie das Repository vorbereitet, kompiliert, getestet und gestartet wird. Die Anleitung deckt den nativen C++-Workflow, den optionalen Ollama-/LLM-Lauf und die Termux-/Bootstrap-Variante ab.
+
+## 1. Voraussetzungen
+
+Vor dem Start sollten diese Pakete installiert sein:
+
+- Git
+- CMake 3.16+
+- C++20-Compiler, z. B. `gcc` oder `clang`
+- Make oder Ninja
+- Python 3
+- Optional: Java 17+ und Android SDK, falls Android-Tests oder App-Builds benötigt werden
+- Optional: Ollama, falls ein lokales Modell verwendet werden soll
+
+Prüfen:
+
+```bash
+git --version
+cmake --version
+gcc --version
+python3 --version
+```
+
+Falls ein Paket fehlt, installieren und anschließend die Version prüfen.
+
+## 2. Repository klonen
+
+```bash
+git clone <repo-url>
+cd Agent
+```
+
+## 3. Native Build auf Linux
+
+### 3.1 Direkt mit CMake
+
+```bash
+cmake -S native -B build-native
+cmake --build build-native
+ctest --test-dir build-native --output-on-failure
+```
+
+### 3.2 Mit dem Shell-Skript
+
+```bash
+bash skripte/lokal_bauen.sh
+```
+
+Das Skript setzt den Standard-Workflow für den lokalen CMake-/CTest-Lauf auf Linux und prüft den nativen Build automatisch.
+
+### 3.3 Ergebnis prüfen
+
+Nach erfolgreichem Build liegt die ausführbare Datei typischerweise hier:
+
+```text
+build-native/agentenlauf
+```
+
+Wenn diese Datei vorhanden ist, funktioniert der native Setup-Schritt.
+
+## 4. CLI starten
+
+Beispiel für einen lokalen Lauf:
+
+```bash
+./build-native/agentenlauf --arbeitsverzeichnis "$HOME/workspace/mein-projekt" --aufgabe "Erstelle ein Mini-CMake-Projekt mit Test" --ollama-url http://127.0.0.1:11434 --modell llama3.2
+```
+
+Wichtige Argumente:
+
+- `--arbeitsverzeichnis`: Ordner, in dem der Agent arbeitet
+- `--aufgabe`: Aufgabe an den Agenten
+- `--ollama-url`: Beispiel `http://127.0.0.1:11434`
+- `--modell`: z. B. `llama3.2`
+- `--max-iterationen`: Maximale Anzahl an Iterationen
+- `--offline`: Lauf ohne externes Modell
+- `--git-commits`: aktiviert begrenzte Git-Schritte, falls erlaubt
+
+Beispiel ohne Ollama:
+
+```bash
+./build-native/agentenlauf --arbeitsverzeichnis "$HOME/workspace/mein-projekt" --aufgabe "Prüfe das Projekt und baue es lokal" --offline
+```
+
+## 5. Ollama lokal einrichten
+
+Wenn ein echtes LLM verwendet werden soll, muss Ollama lokal erreichbar sein.
+
+### 5.1 Ollama starten
+
+```bash
+ollama pull llama3.2
+ollama serve
+```
+
+Danach ist der Standard-Endpunkt in der Regel:
+
+```text
+http://127.0.0.1:11434
+```
+
+### 5.2 Agent testen
+
+```bash
+./build-native/agentenlauf --arbeitsverzeichnis "$HOME/workspace/mein-projekt" --aufgabe "Erstelle ein kleines Testprojekt und prüfe den Build" --ollama-url http://127.0.0.1:11434 --modell llama3.2
+```
+
+Wenn Ollama nicht läuft, muss der Agent entweder in `--offline`-Modus gestartet oder vorher das Modell installiert werden.
+
+## 6. Android-Setup auf Linux
+
+Wenn Android-Builds oder Unit-Tests mitlaufen sollen, ist das Android SDK nötig.
+
+### 6.1 `local.properties` setzen
+
+Im Projektstamm erzeugen:
+
+```properties
+sdk.dir=/home/<benutzer>/Android/Sdk
+```
+
+Beispiel:
+
+```properties
+sdk.dir=/home/max/Android/Sdk
+```
+
+### 6.2 App-Build und Tests
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+```
+
+Oder direkt mit Gradle:
+
+```bash
+gradle :app:assembleDebug :app:testDebugUnitTest
+```
+
+Das Projekt ist für AGP 8.7.3 und Gradle 8.9 konfiguriert.
+
+## 7. Python-Runner und Termux-Variante
+
+Für mobile oder eingeschränkte Umgebungen kann der Python-Runner genutzt werden:
+
+```bash
+python3 laufwerk/termux_ollama.py --arbeitsverzeichnis "$HOME/werkstatt" --aufgabe "Mini-CMake-Projekt mit Test"
+```
+
+Der Runner unterstützt dieselben Grundparameter:
+
+- `--arbeitsverzeichnis`
+- `--aufgabe`
+- `--ollama-url`
+- `--modell`
+- `--max-iterationen`
+- `--offline`
+- `--bootstrap`
+
+### 7.1 Bootstrap auf Termux/Android
+
+```bash
+python3 laufwerk/termux_bootstrap.py --bootstrap
+```
+
+Oder:
+
+```bash
+bash skripte/termux_setup.sh
+```
+
+Der Bootstrap prüft die Laufzeitumgebung, installiert fehlende Pakete und validiert die Ollama-/Socket-Umgebung mit Safe-Mode-Fallback.
+
+## 8. Sicherheitsmodell
+
+Der Agent arbeitet nur innerhalb des konfigurierten Arbeitsverzeichnisses. Pfade mit `..` oder Zugriffe außerhalb des Projektbereichs werden als unsicher erkannt und abgelehnt. Das verhindert unbeabsichtigtes Schreiben in fremde oder systemnahe Ordner.
+
+## 9. Troubleshooting
+
+### Build schlägt fehl
+
+- CMake-Version und Compiler prüfen
+- `build-native` bereinigen und erneut konfigurieren
+
+```bash
+rm -rf build-native
+cmake -S native -B build-native
+cmake --build build-native
+ctest --test-dir build-native --output-on-failure
+```
+
+### `agentenlauf` fehlt
+
+- Prüfen, ob der native Build erfolgreich abgeschlossen wurde
+- Build-Ordner beachten
+- CMake-Konfiguration erneut ausführen
+
+### `local.properties` fehlt oder SDK-Pfad falsch
+
+- `local.properties` im Projektstamm erstellen
+- SDK-Pfad mit dem tatsächlich installierten Pfad abgleichen
+
+### Ollama nicht erreichbar
+
+- `ollama serve` starten
+- URL/Port prüfen
+- Modell korrekt installieren
+- Bei Bedarf `--offline` nutzen
+
+### Agent ändert nur im Zielordner
+
+Das ist beabsichtigt. Der Agent darf nur im konfigurierten Arbeitsbereich schreiben.
+
+## 10. Standard-Workflow für Linux
+
+1. Repository klonen
+2. Abhängigkeiten installieren
+3. CMake- und CTest-Build ausführen
+4. CLI mit Aufgabenbeschreibung starten
+5. Optional: Ollama starten und Modell verwenden
+6. Bei Android: SDK in `local.properties` setzen und Gradle-Tests ausführen
+
+Damit ist der Setup-Pfad auf Linux vollständig und ohne offene Fragen nutzbar.
