@@ -49,9 +49,13 @@ class UniversalTaskEngine(
         }
 
         logStream?.append("[sandbox] validating ${project.type} project")
-        val result = socketBridge.executeCommand(validationCommand, project.rootDir.absolutePath) { chunk ->
-            logStream?.append("[sandbox] $chunk")
-        }
+        val result = socketBridge.executeCommand(
+            command = validationCommand,
+            workingDirectory = project.rootDir.absolutePath,
+            onChunk = { chunk: String ->
+                logStream?.append("[sandbox] $chunk")
+            }
+        )
 
         return if (result.exitCode == 0) {
             "Sandbox ready: ${project.rootDir.absolutePath} (${project.type})"
