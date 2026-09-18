@@ -20,6 +20,12 @@ AGENT_BUILD_HOST_TOOLS:BOOL=OFF
 //Build the native test suite
 AGENT_BUILD_TESTS:BOOL=OFF
 
+//No help, variable specified on the command line.
+ANDROID_ABI:UNINITIALIZED=arm64-v8a
+
+//No help, variable specified on the command line.
+ANDROID_PLATFORM:UNINITIALIZED=android-30
+
 //Value Computed by CMake
 AgentNative_BINARY_DIR:STATIC=/home/runner/work/Agent/Agent/build-root-standalone/native
 
@@ -206,6 +212,9 @@ CMAKE_STRIP:FILEPATH=/usr/bin/strip
 
 //Path to a program.
 CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
+
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=cmake/toolchains/android-standalone.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console

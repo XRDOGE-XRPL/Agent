@@ -1,0 +1,2 @@
+/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar qc liblibcutils.a CMakeFiles/libcutils.dir/cmake/standalone/empty.cpp.o
+/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib liblibcutils.a
