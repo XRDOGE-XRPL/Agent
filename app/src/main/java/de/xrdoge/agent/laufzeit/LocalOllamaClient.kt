@@ -13,7 +13,9 @@ class LocalOllamaClient(
     private val baseUrl: String = "http://127.0.0.1:11434",
     private val model: String = "qwen2.5-coder",
     private val bridge: LocalSocketBridge = LocalSocketBridge(),
-    private val logStream: LogStreamManager? = null
+    private val logStream: LogStreamManager? = null,
+    private val numCtx: Int = 4096,
+    private val maxPromptChars: Int = 6_000
 ) {
     suspend fun reachable(): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -31,12 +33,15 @@ class LocalOllamaClient(
 
     suspend fun generate(prompt: String): String = withContext(Dispatchers.IO) {
         val normalizedUrl = baseUrl.trimEnd('/')
+        val safePrompt = OllamaKlient.begrenzePrompt(prompt, maxPromptChars)
         val payload = buildString {
             append("{\"model\":\"")
             append(OllamaKlient.jsonEscape(model))
             append("\",\"prompt\":\"")
-            append(OllamaKlient.jsonEscape(prompt))
-            append("\",\"stream\":false}")
+            append(OllamaKlient.jsonEscape(safePrompt))
+            append("\",\"stream\":false,\"options\":{\"num_ctx\":")
+            append(kotlin.math.max(512, numCtx))
+            append(",\"temperature\":0.2}}")
         }
 
         logStream?.append("[ollama] requesting model=$model")

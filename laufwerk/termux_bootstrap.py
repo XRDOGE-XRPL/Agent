@@ -17,7 +17,9 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -41,6 +43,7 @@ DEFAULT_CONFIG = {
     "workspace": "~/workspace",
     "ollama_url": "http://127.0.0.1:11434",
     "model": "qwen2.5-coder",
+    "ollama_ctx_length": 4096,
     "port": 5050,
     "socket_host": "127.0.0.1",
     "timeout_seconds": 120,
@@ -175,17 +178,61 @@ def ensure_ollama() -> Dict[str, object]:
     return {"installed": False, "status": "unavailable", "error": "ollama not installed and no pkg manager available"}
 
 
+def ensure_ollama_server(ollama_url: str, ctx_length: int = 4096, quiet: bool = False) -> Dict[str, object]:
+    state = check_ollama_port(ollama_url)
+    if state.get("reachable"):
+        return {"started": False, "status": "already_running", "ctx_length": int(ctx_length), "probe": state}
+
+    ollama_cmd = shutil.which("ollama")
+    if not ollama_cmd:
+        return {"started": False, "status": "missing_ollama", "ctx_length": int(ctx_length), "probe": state}
+
+    parsed = urllib.parse.urlparse(ollama_url)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 11434
+    # Ollama requires an explicit context window to avoid the default 2050-token truncation
+    # that otherwise cuts off the repository context and breaks the agent loop.
+    ctx = max(512, int(ctx_length))
+    env = os.environ.copy()
+    env["OLLAMA_HOST"] = f"{host}:{port}"
+    env["OLLAMA_NUM_CTX"] = str(ctx)
+    env["OLLAMA_CONTEXT_LENGTH"] = str(ctx)
+    log_file = Path.home() / ".agent" / "logs" / "ollama-server.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    with log_file.open("a", encoding="utf-8") as log_handle:
+        process = subprocess.Popen([
+            ollama_cmd,
+            "serve",
+            "--host",
+            host,
+            "--port",
+            str(port),
+            "--num-ctx",
+            str(ctx),
+        ], stdout=log_handle, stderr=subprocess.STDOUT, env=env)
+    try:
+        for _ in range(30):
+            probe = check_ollama_port(ollama_url)
+            if probe.get("reachable"):
+                return {"started": True, "status": "started", "pid": process.pid, "ctx_length": int(ctx_length), "probe": probe}
+            time.sleep(0.5)
+    except Exception:
+        pass
+    return {"started": False, "status": "failed_to_start", "pid": getattr(process, "pid", None), "ctx_length": int(ctx_length), "probe": state}
+
+
 def default_runtime_dir() -> Path:
     return Path.home() / ".agent"
 
 
-def ensure_runtime_config(path: Path, workspace: str, ollama_url: str, model: str) -> Dict[str, object]:
+def ensure_runtime_config(path: Path, workspace: str, ollama_url: str, model: str, ollama_ctx_length: int = 4096) -> Dict[str, object]:
     config = {
         **DEFAULT_CONFIG,
         "termux": detect_termux(),
         "workspace": workspace,
         "ollama_url": ollama_url,
         "model": model,
+        "ollama_ctx_length": max(512, int(ollama_ctx_length)),
         "runtime_dir": str(default_runtime_dir()),
         "log_dir": str(default_runtime_dir() / "logs"),
     }
@@ -324,6 +371,7 @@ def bootstrap_runtime(
     workspace: Optional[str] = None,
     ollama_url: str = "http://127.0.0.1:11434",
     model: str = "qwen2.5-coder",
+    ollama_ctx_length: int = 4096,
     quiet: bool = False,
 ) -> Dict[str, object]:
     termux_mode = detect_termux()
@@ -355,7 +403,7 @@ def bootstrap_runtime(
     if not termux_mode:
         report["status"] = "safe-mode"
         report["warnings"].append("Not running in Termux. Runtime stays in safe mode and only local checks are performed.")
-        ensure_runtime_config(config_path, workspace, ollama_url, model)
+        ensure_runtime_config(config_path, workspace, ollama_url, model, ollama_ctx_length=ollama_ctx_length)
         report["health"]["runtime_ready"] = True
         report["health"]["python_ready"] = shutil.which("python3") is not None or shutil.which("python") is not None
         report["health"]["ollama_ready"] = False
@@ -390,7 +438,7 @@ def bootstrap_runtime(
         report["status"] = "warning"
         report["warnings"].append(str(exc))
 
-    config = ensure_runtime_config(config_path, workspace, ollama_url, model)
+    config = ensure_runtime_config(config_path, workspace, ollama_url, model, ollama_ctx_length=ollama_ctx_length)
     report["config"] = config
     report["log_dir"] = str(log_dir)
 
@@ -400,6 +448,9 @@ def bootstrap_runtime(
         report["health"]["python_ready"] = venv_path.exists() or shutil.which("python3") is not None or shutil.which("python") is not None
 
     ollama_state = check_ollama_port(ollama_url)
+    if not ollama_state.get("reachable"):
+        report["ollama_startup"] = ensure_ollama_server(ollama_url, ctx_length=max(512, int(ollama_ctx_length)), quiet=quiet)
+        ollama_state = check_ollama_port(ollama_url)
     report["health"]["ollama_ready"] = bool(ollama_state.get("reachable"))
     report["health"]["socket_ready"] = report["health"]["ollama_ready"]
     report["health"]["runtime_ready"] = bool(report["health"]["python_ready"]) and report["health"]["socket_ready"]
@@ -431,6 +482,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="run a status check without installing packages")
     parser.add_argument("--workspace", default=str(Path.home() / "workspace"), help="workspace directory used by the agent")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434", help="Ollama URL for the local runtime")
+    parser.add_argument("--ollama-num-ctx", type=int, default=4096, help="context window to request from Ollama")
     parser.add_argument("--model", default="qwen2.5-coder", help="default model name")
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
@@ -456,25 +508,25 @@ def main() -> int:
         return 0
 
     if args.healthcheck:
-        report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, ollama_ctx_length=args.ollama_num_ctx, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
         return 0
 
     if args.check and not args.bootstrap:
-        report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        report = bootstrap_runtime(install_missing=False, install_ollama=False, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, ollama_ctx_length=args.ollama_num_ctx, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
         return 0
 
     if args.bootstrap:
-        report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, ollama_ctx_length=args.ollama_num_ctx, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
         return 0
 
     if not any((args.check, args.bootstrap, args.healthcheck, args.proot_android_build)):
-        report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, quiet=args.quiet)
+        report = bootstrap_runtime(install_missing=True, install_ollama=True, workspace=args.workspace, ollama_url=args.ollama_url, model=args.model, ollama_ctx_length=args.ollama_num_ctx, quiet=args.quiet)
         if args.json:
             print(json.dumps(report, ensure_ascii=False))
         return 0

@@ -24,9 +24,26 @@ Schema:
 Nur relative Pfade, keine Platzhalter, Begründungen auf Deutsch.
 """
 
+DEFAULT_OLLAMA_NUM_CTX = 4096
+DEFAULT_MAX_PROMPT_CHARS = 6000
 
-def ollama_anfragen(url: str, modell: str, prompt: str) -> str:
-    koerper = json.dumps({"model": modell, "prompt": prompt, "stream": False}).encode("utf-8")
+
+def prompt_begrenzen(prompt: str, max_chars: int = DEFAULT_MAX_PROMPT_CHARS) -> str:
+    if len(prompt) <= max_chars:
+        return prompt
+    suffix = "... [Prompt gekürzt]"
+    if max_chars <= len(suffix):
+        return suffix[:max_chars]
+    return prompt[: max_chars - len(suffix)] + suffix
+
+
+def ollama_anfragen(url: str, modell: str, prompt: str, num_ctx: int = DEFAULT_OLLAMA_NUM_CTX) -> str:
+    koerper = json.dumps({
+        "model": modell,
+        "prompt": prompt_begrenzen(prompt),
+        "stream": False,
+        "options": {"num_ctx": max(512, int(num_ctx)), "temperature": 0.2},
+    }).encode("utf-8")
     anfrage = urllib.request.Request(
         url.rstrip("/") + "/api/generate",
         data=koerper,
@@ -97,13 +114,14 @@ def schleife(args: argparse.Namespace) -> int:
                 dateien.append(str(pfad.relative_to(wurzel)))
         prompt = (
             f"{SYSTEM_PROMPT}\nIteration: {iteration}\nAufgabe: {args.aufgabe}\n"
-            f"Dateien: {dateien[:200]}\nLetzte Fehler:\n{letzte_fehler}\n"
+            f"Dateien: {dateien[:120]}\nLetzte Fehler:\n{letzte_fehler}\n"
         )
+        prompt = prompt_begrenzen(prompt, DEFAULT_MAX_PROMPT_CHARS)
         if args.offline:
             antwort = '{"schritte":[{"aktion":"git_status","begruendung":"Offline-Modus: keine Ollama-Anfrage; lokale Prüfung wird verwendet."}]}'
         else:
             try:
-                antwort = ollama_anfragen(args.ollama_url, args.modell, prompt)
+                antwort = ollama_anfragen(args.ollama_url, args.modell, prompt, num_ctx=args.num_ctx)
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as ex:
                 print(f"[FEHLER] Ollama: {ex}", file=sys.stderr)
                 return 2
@@ -161,6 +179,7 @@ def main() -> int:
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--modell", default="qwen2.5-coder")
     parser.add_argument("--max-iterationen", type=int, default=8)
+    parser.add_argument("--num-ctx", type=int, default=DEFAULT_OLLAMA_NUM_CTX, help="Ollama context window for the generate endpoint")
     parser.add_argument("--offline", action="store_true", help="skip Ollama requests and operate in local-safe offline mode")
     parser.add_argument("--bootstrap", action="store_true", help="run Termux bootstrap before the agent starts")
     args = parser.parse_args()

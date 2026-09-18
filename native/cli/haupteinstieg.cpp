@@ -14,10 +14,12 @@ void hilfe() {
               << "Nutzung:\n"
               << "  agentenlauf --arbeitsverzeichnis <pfad> --aufgabe <text> [optionen]\n"
               << "Optionen:\n"
-              << "  --ollama-url <url>     Standard: http://127.0.0.1:11434\n"
-              << "  --modell <name>        Standard: qwen2.5-coder\n"
-              << "  --max-iterationen <n>  Standard: 8\n"
-              << "  --git-commits          Erlaubt git commit\n"
+              << "  --ollama-url <url>       Standard: http://127.0.0.1:11434\n"
+              << "  --modell <name>          Standard: qwen2.5-coder\n"
+              << "  --ollama-num-ctx <n>     Standard: 4096\n"
+              << "  --max-prompt-zeichen <n> Standard: 6000\n"
+              << "  --max-iterationen <n>    Standard: 8\n"
+              << "  --git-commits            Erlaubt git commit\n"
               << "  --offline              Keine Netzwerkanfragen\n"
               << "  --hilfe                Diese Hilfe\n";
 }
@@ -53,6 +55,8 @@ int main(int argc, char** argv) {
     konfig.aufgabe = arg_wert(argc, argv, "--aufgabe", "");
     konfig.ollama_url = arg_wert(argc, argv, "--ollama-url", konfig.ollama_url);
     konfig.modell = arg_wert(argc, argv, "--modell", konfig.modell);
+    konfig.ollama_num_ctx = std::stoi(arg_wert(argc, argv, "--ollama-num-ctx", "4096"));
+    konfig.max_prompt_zeichen = std::stoi(arg_wert(argc, argv, "--max-prompt-zeichen", "6000"));
     konfig.max_iterationen = std::stoi(arg_wert(argc, argv, "--max-iterationen", "8"));
     konfig.git_commits_erlauben = flag(argc, argv, "--git-commits");
     konfig.offline_erzwingen = flag(argc, argv, "--offline");
