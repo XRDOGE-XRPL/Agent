@@ -190,14 +190,26 @@ def ensure_ollama_server(ollama_url: str, ctx_length: int = 4096, quiet: bool = 
     parsed = urllib.parse.urlparse(ollama_url)
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 11434
+    # Ollama requires an explicit context window to avoid the default 2050-token truncation
+    # that otherwise cuts off the repository context and breaks the agent loop.
+    ctx = max(512, int(ctx_length))
     env = os.environ.copy()
     env["OLLAMA_HOST"] = f"{host}:{port}"
-    env["OLLAMA_NUM_CTX"] = str(max(512, int(ctx_length)))
-    env["OLLAMA_CONTEXT_LENGTH"] = str(max(512, int(ctx_length)))
+    env["OLLAMA_NUM_CTX"] = str(ctx)
+    env["OLLAMA_CONTEXT_LENGTH"] = str(ctx)
     log_file = Path.home() / ".agent" / "logs" / "ollama-server.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
     with log_file.open("a", encoding="utf-8") as log_handle:
-        process = subprocess.Popen([ollama_cmd, "serve"], stdout=log_handle, stderr=subprocess.STDOUT, env=env)
+        process = subprocess.Popen([
+            ollama_cmd,
+            "serve",
+            "--host",
+            host,
+            "--port",
+            str(port),
+            "--num-ctx",
+            str(ctx),
+        ], stdout=log_handle, stderr=subprocess.STDOUT, env=env)
     try:
         for _ in range(30):
             probe = check_ollama_port(ollama_url)
