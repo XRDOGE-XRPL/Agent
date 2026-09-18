@@ -257,12 +257,6 @@ if ! proot-distro list 2>/dev/null | grep -qi debian; then
   proot-distro install debian
 fi
 
-if [ ! -d "$REPO_PATH" ]; then
-  git clone "$REPO_URL" "$REPO_PATH"
-else
-  git -C "$REPO_PATH" pull --ff-only || true
-fi
-
 proot-distro login debian --user root -- bash -lc '
   set -e
   export DEBIAN_FRONTEND=noninteractive
@@ -272,16 +266,15 @@ proot-distro login debian --user root -- bash -lc '
   export ANDROID_HOME={sdk_root}
 
   apt-get update
-  apt-get install -y openjdk-21-jdk gradle unzip wget git curl ca-certificates cmake
-
-  curl -fsSL https://ollama.com/install.sh | sh
-  nohup ollama serve >/tmp/ollama-proot.log 2>&1 &
-  sleep 5
-  ollama pull qwen2.5-coder || true
+  apt-get install -y --no-install-recommends \
+    git wget curl unzip ca-certificates \
+    openjdk-21-jdk build-essential cmake \
+    python3 python-is-python3 ninja-build
 
   mkdir -p {sdk_root}
-  cd /opt
-  wget -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip || curl -L -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+  cd /tmp
+  wget -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip || \
+    curl -L -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
   unzip -o commandlinetools.zip -d {sdk_root}
   mkdir -p {sdk_root}/cmdline-tools/latest
   if [ -d {sdk_root}/cmdline-tools ]; then
@@ -289,12 +282,9 @@ proot-distro login debian --user root -- bash -lc '
   fi
 
   yes | {sdk_root}/cmdline-tools/latest/bin/sdkmanager --sdk_root={sdk_root} "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.1.12297006"
-  printf "sdk.dir={sdk_root}\\ncmake.dir=/usr\\n" > "$REPO_PATH"/local.properties
-  export PATH="/usr/bin:$PATH"
-  export CMAKE_COMMAND=/usr/bin/cmake
-
-  cd "$REPO_PATH"
-  ./gradlew clean assembleDebug --no-daemon --stacktrace
+  printf '%s\\n%s\\n' "sdk.dir={sdk_root}" "cmake.dir=/usr" > /tmp/android-startup.env
+  echo "Startup setup complete. This script prepares the Proot Debian + Android SDK toolchain only; it does not build the project."
+  echo "To continue manually, clone or open the repo and run the project-specific build steps from inside the Proot environment."
 '
 """
     return script
@@ -445,7 +435,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
     parser.add_argument("--healthcheck", action="store_true", help="run the status/health validation without changing the environment")
-    parser.add_argument("--proot-android-build", action="store_true", help="install the Proot Debian environment, Android SDK, Java toolchain, and build the APK")
+    parser.add_argument("--proot-android-setup", "--proot-android-build", dest="proot_android_build", action="store_true", help="provision the Proot Debian environment and Android SDK toolchain (startup setup only; no project build step)")
     parser.add_argument("--repo-url", default="https://github.com/XRDOGE-XRPL/Agent.git", help="GitHub repository URL to clone into the Proot Debian environment")
     parser.add_argument("--repo-path", default="/root/Agent", help="Target repo path inside the Proot Debian environment")
     parser.add_argument("--sdk-root", default="/opt/android-sdk", help="Android SDK path inside the Proot Debian environment")
