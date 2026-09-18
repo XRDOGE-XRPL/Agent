@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
+
+REPO_ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+HOST_ARCH="$(uname -m 2>/dev/null || printf 'unknown')"
 
 resolve_java_home() {
   if [ -n "${JAVA_HOME:-}" ] && [ -x "${JAVA_HOME}/bin/java" ]; then
@@ -14,12 +17,13 @@ resolve_java_home() {
     /usr/lib/jvm/java-17-openjdk-amd64 \
     /usr/lib/jvm/java-17-openjdk-arm64 \
     /usr/lib/jvm/temurin-21-jdk-amd64 \
+    /usr/lib/jvm/temurin-21-jdk-arm64 \
     /usr/lib/jvm/temurin-17-jdk-amd64 \
     /usr/lib/jvm/temurin-21-jdk \
     /usr/lib/jvm/temurin-17-jdk \
     /usr/lib/jvm/default-java \
     /usr/lib/jvm/default; do
-    if [ -x "$candidate/bin/java" ]; then
+    if [ -n "$candidate" ] && [ -x "$candidate/bin/java" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi
@@ -59,11 +63,76 @@ resolve_android_home() {
   return 1
 }
 
-if [ -n "${PREFIX:-}" ] && echo "$PREFIX" | grep -qi 'termux'; then
-  echo "Android builds MUST NOT run directly on the Termux host. Use the Proot Debian bootstrap instead:" >&2
-  echo "  python laufwerk/termux_bootstrap.py --bootstrap" >&2
-  exit 1
-fi
+resolve_android_aapt2() {
+  local sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
+  local candidate
+
+  if [ -d "$sdk_root/build-tools" ]; then
+    while IFS= read -r candidate; do
+      if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    done < <(find "$sdk_root/build-tools" -type f -name 'aapt2' 2>/dev/null | sort)
+  fi
+
+  if [ -x "$sdk_root/build-tools/37.0.0/aapt2" ]; then
+    printf '%s\n' "$sdk_root/build-tools/37.0.0/aapt2"
+    return 0
+  fi
+
+  if [ -x "$sdk_root/build-tools/34.0.0/aapt2" ]; then
+    printf '%s\n' "$sdk_root/build-tools/34.0.0/aapt2"
+    return 0
+  fi
+
+  return 1
+}
+
+sanitize_gradle_properties() {
+  local props_file="$REPO_ROOT/gradle.properties"
+  local aapt2_override
+
+  touch "$props_file"
+
+  if grep -q '^org.gradle.daemon=' "$props_file"; then
+    sed -i 's|^org.gradle.daemon=.*|org.gradle.daemon=false|' "$props_file"
+  else
+    printf '\norg.gradle.daemon=false\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.parallel=' "$props_file"; then
+    sed -i 's|^org.gradle.parallel=.*|org.gradle.parallel=false|' "$props_file"
+  else
+    printf 'org.gradle.parallel=false\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.workers.max=' "$props_file"; then
+    sed -i 's|^org.gradle.workers.max=.*|org.gradle.workers.max=1|' "$props_file"
+  else
+    printf 'org.gradle.workers.max=1\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.jvmargs=' "$props_file"; then
+    sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false|' "$props_file"
+  else
+    printf 'org.gradle.jvmargs=-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false\n' >> "$props_file"
+  fi
+
+  aapt2_override="$(resolve_android_aapt2 || true)"
+
+  if [ -n "$aapt2_override" ] && [ -x "$aapt2_override" ] && [ "$HOST_ARCH" != "x86_64" ] && [ "$HOST_ARCH" != "amd64" ]; then
+    if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
+      sed -i "s|^android.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2_override|" "$props_file"
+    else
+      printf 'android.aapt2FromMavenOverride=%s\n' "$aapt2_override" >> "$props_file"
+    fi
+  else
+    if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
+      sed -i '/^android.aapt2FromMavenOverride=/d' "$props_file"
+    fi
+  fi
+}
 
 ensure_host_runtime_libraries() {
   if command -v apt-get >/dev/null 2>&1; then
@@ -74,6 +143,12 @@ ensure_host_runtime_libraries() {
     pkg install -y libstdc++ zlib >/dev/null 2>&1 || true
   fi
 }
+
+if [ -n "${PREFIX:-}" ] && echo "$PREFIX" | grep -qi 'termux'; then
+  echo "Android builds MUST NOT run directly on the Termux host. Use the Proot Debian bootstrap instead:" >&2
+  echo "  python laufwerk/termux_bootstrap.py --bootstrap" >&2
+  exit 1
+fi
 
 ensure_host_runtime_libraries
 
@@ -90,13 +165,19 @@ export CMAKE_COMMAND=${CMAKE_COMMAND:-/usr/bin/cmake}
 JAVA_HOME=$(resolve_java_home || true)
 if [ -z "$JAVA_HOME" ]; then
   echo "JAVA_HOME is not set and no supported JDK was found. Install OpenJDK 17/21 and rerun the Android build." >&2
-  echo "Expected locations include /usr/lib/jvm/java-21-openjdk-amd64, /usr/lib/jvm/temurin-21-jdk-amd64 or /usr/lib/jvm/default-java." >&2
+  echo "Expected locations include /usr/lib/jvm/java-21-openjdk-amd64, /usr/lib/jvm/java-21-openjdk-arm64, /usr/lib/jvm/temurin-21-jdk-amd64 or /usr/lib/jvm/default-java." >&2
   exit 1
 fi
 export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 
-cd "$(dirname "$0")"
+cd "$REPO_ROOT"
+
+if [ "${HOST_ARCH}" = "aarch64" ] || [ "${HOST_ARCH}" = "arm64" ]; then
+  export ANDROID_BUILD_ABI="arm64-v8a"
+fi
+
+sanitize_gradle_properties
 
 if ! command -v cmake >/dev/null 2>&1; then
   if command -v apt-get >/dev/null 2>&1; then
@@ -130,4 +211,4 @@ if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
 fi
 
 ./gradlew --stop || true
-./gradlew clean assembleDebug --no-daemon --stacktrace
+./gradlew clean assembleDebug --no-daemon --stacktrace --max-workers=1 -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs='-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false'

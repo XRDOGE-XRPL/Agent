@@ -15,6 +15,22 @@ require_command() {
   command -v "$1" >/dev/null 2>&1
 }
 
+detect_architecture() {
+  local arch
+  arch="$(uname -m 2>/dev/null || printf 'unknown')"
+  case "$arch" in
+    aarch64|arm64)
+      printf '%s\n' "arm64"
+      ;;
+    x86_64|amd64)
+      printf '%s\n' "amd64"
+      ;;
+    *)
+      printf '%s\n' "$arch"
+      ;;
+  esac
+}
+
 detect_java_home() {
   local candidates=(
     "${JAVA_HOME:-}"
@@ -217,12 +233,38 @@ ensure_gradle_hardening() {
   local props_file="$REPO_ROOT/gradle.properties"
   local local_props="$REPO_ROOT/local.properties"
   local aapt2_override
+  local arch
 
   mkdir -p "$REPO_ROOT"
+  arch="$(detect_architecture)"
   aapt2_override="$(resolve_android_aapt2 || true)"
 
   if [ ! -f "$props_file" ]; then
     touch "$props_file"
+  fi
+
+  if grep -q '^org.gradle.daemon=' "$props_file"; then
+    sed -i 's|^org.gradle.daemon=.*|org.gradle.daemon=false|' "$props_file"
+  else
+    printf '\norg.gradle.daemon=false\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.parallel=' "$props_file"; then
+    sed -i 's|^org.gradle.parallel=.*|org.gradle.parallel=false|' "$props_file"
+  else
+    printf 'org.gradle.parallel=false\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.workers.max=' "$props_file"; then
+    sed -i 's|^org.gradle.workers.max=.*|org.gradle.workers.max=1|' "$props_file"
+  else
+    printf 'org.gradle.workers.max=1\n' >> "$props_file"
+  fi
+
+  if grep -q '^org.gradle.jvmargs=' "$props_file"; then
+    sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false|' "$props_file"
+  else
+    printf 'org.gradle.jvmargs=-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false\n' >> "$props_file"
   fi
 
   if grep -q '^android.aapt2.daemon.enabled=' "$props_file"; then
@@ -231,7 +273,7 @@ ensure_gradle_hardening() {
     printf '\nandroid.aapt2.daemon.enabled=false\n' >> "$props_file"
   fi
 
-  if [ -n "$aapt2_override" ] && [ -x "$aapt2_override" ]; then
+  if [ -n "$aapt2_override" ] && [ -x "$aapt2_override" ] && [ "$arch" != "amd64" ]; then
     if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
       sed -i "s|^android.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2_override|" "$props_file"
     else
@@ -241,7 +283,7 @@ ensure_gradle_hardening() {
     if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
       sed -i '/^android.aapt2FromMavenOverride=/d' "$props_file"
     fi
-    log "No valid local aapt2 binary found; leaving Maven AAPT2 fallback unset to avoid broken overrides."
+    log "No valid local aapt2 binary found for ${arch}; Maven AAPT2 fallback unset to avoid broken overrides."
   fi
 
   if ! grep -q '^android.useAndroidX=' "$props_file"; then
@@ -323,8 +365,11 @@ main() {
   export PATH="$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools"
 
   local aapt2_override
+  local arch
+  arch="$(detect_architecture)"
   aapt2_override="$(resolve_android_aapt2 || true)"
 
+  log "Host architecture: $arch"
   log "Host workspace initialized at $WORKSPACE_DIR"
   log "Required directories: ${REQUIRED_DIRS[*]}"
   log "JAVA_HOME=$JAVA_HOME"
