@@ -63,6 +63,32 @@ resolve_android_home() {
   return 1
 }
 
+validate_android_toolchain_architecture() {
+  case "$HOST_ARCH" in
+    aarch64|arm64)
+      local ndk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}/ndk"
+      if [ -d "$ndk_root" ]; then
+        while IFS= read -r mismatch; do
+          if [ -n "$mismatch" ]; then
+            echo "Architektur-Mismatch erkannt: Android NDK verwendet im Host-Setup "$mismatch" (linux-x86_64) auf einem ARM64-System." >&2
+            echo "Das führt bei clang++ zu 'Illegal instruction'. Use a native ARM64 NDK or unset the stale CXX/CC env vars before rerunning the build." >&2
+            exit 1
+          fi
+        done < <(find "$ndk_root" -path '*/toolchains/llvm/prebuilt/linux-x86_64' -type d 2>/dev/null)
+      fi
+
+      if [ -n "${CC:-}" ] && printf '%s' "$CC" | grep -Eqi 'qemu-bin|linux-x86_64'; then
+        echo "Stale CC path detected: $CC" >&2
+        unset CC
+      fi
+      if [ -n "${CXX:-}" ] && printf '%s' "$CXX" | grep -Eqi 'qemu-bin|linux-x86_64'; then
+        echo "Stale CXX path detected: $CXX" >&2
+        unset CXX
+      fi
+      ;;
+  esac
+}
+
 resolve_android_aapt2() {
   local sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
   local candidate
@@ -164,6 +190,8 @@ export ANDROID_HOME
 export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-${ANDROID_HOME}}
 export PATH="/usr/bin:${PATH}"
 export CMAKE_COMMAND=${CMAKE_COMMAND:-/usr/bin/cmake}
+
+validate_android_toolchain_architecture
 
 JAVA_HOME=$(resolve_java_home || true)
 if [ -z "$JAVA_HOME" ]; then
