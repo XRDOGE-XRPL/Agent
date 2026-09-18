@@ -10,6 +10,18 @@
 
 namespace agent {
 namespace fs = std::filesystem;
+namespace {
+std::string prompt_begrenzen(const std::string& text, std::size_t max_zeichen) {
+    if (text.size() <= max_zeichen) {
+        return text;
+    }
+    const std::string suffix = "... [gekürzt]";
+    if (max_zeichen <= suffix.size()) {
+        return text.substr(0, max_zeichen);
+    }
+    return text.substr(0, max_zeichen - suffix.size()) + suffix;
+}
+}  // namespace
 
 AgentSchleife::AgentSchleife(Konfiguration konfig, LlmSchnittstelle& llm, Protokollierung& log)
     : konfig_(std::move(konfig)), llm_(llm), log_(log) {}
@@ -64,7 +76,7 @@ AgentErgebnis AgentSchleife::ausfuehren() {
             git_kontext = "Kein Git-Repository vorhanden.\n";
         }
         const std::string prompt =
-            benutzer_prompt(konfig_, kontext + "\n" + git_kontext, letzte_fehler_, i);
+            benutzer_prompt(konfig_, prompt_begrenzen(kontext + "\n" + git_kontext, konfig_.max_prompt_zeichen), letzte_fehler_, i);
         std::string llm_fehler;
         const std::string antwort = llm_.anfragen(prompt, llm_fehler);
         if (antwort.empty()) {

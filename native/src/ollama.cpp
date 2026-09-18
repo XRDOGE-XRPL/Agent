@@ -1,6 +1,7 @@
 #include "agent/ollama.h"
 #include "agent/json_werkzeuge.h"
 
+#include <algorithm>
 #include <sstream>
 
 namespace agent {
@@ -13,12 +14,15 @@ std::string OllamaKlient::anfragen(const std::string& prompt, std::string& fehle
         fehler = "Offline-Modus: Keine LLM-Anfrage";
         return {};
     }
+    const std::string prompt_gesichert = prompt.size() > static_cast<std::size_t>(konfig_.max_prompt_zeichen)
+        ? prompt.substr(0, static_cast<std::size_t>(konfig_.max_prompt_zeichen) - 15) + "... [gekürzt]"
+        : prompt;
     std::ostringstream body;
     body << "{"
          << "\"model\":\"" << json::escapen(konfig_.modell) << "\","
-         << "\"prompt\":\"" << json::escapen(prompt) << "\","
+         << "\"prompt\":\"" << json::escapen(prompt_gesichert) << "\","
          << "\"stream\":false,"
-         << "\"options\":{\"temperature\":0.2}"
+         << "\"options\":{\"num_ctx\":" << std::max(512, konfig_.ollama_num_ctx) << ",\"temperature\":0.2}"
          << "}";
     std::string basis = konfig_.ollama_url;
     if (!basis.empty() && basis.back() == '/') {

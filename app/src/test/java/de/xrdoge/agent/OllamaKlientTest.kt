@@ -3,6 +3,7 @@ package de.xrdoge.agent
 import de.xrdoge.agent.laufzeit.OllamaKlient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OllamaKlientTest {
@@ -51,5 +52,13 @@ class OllamaKlientTest {
     fun jsonStringFeldAkzeptiertTeilweiseTrunkierteZeichenkette() {
         val json = "{\"model\":\"llama\",\"response\":\"A"
         assertEquals("A", OllamaKlient.jsonStringFeld(json, "response"))
+    }
+
+    @Test
+    fun begrenzePromptSchneidetUeberlangeEingaben() {
+        val prompt = "A".repeat(12_000)
+        val begrenzt = OllamaKlient.begrenzePrompt(prompt)
+        assertTrue(begrenzt.length <= 6_000)
+        assertTrue(begrenzt.endsWith("[gekürzt]"))
     }
 }

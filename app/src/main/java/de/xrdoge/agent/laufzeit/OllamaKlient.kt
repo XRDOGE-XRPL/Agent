@@ -10,15 +10,19 @@ import java.nio.charset.StandardCharsets
 class OllamaKlient(
     private val basisUrl: String,
     private val modell: String,
-    private val timeoutMs: Int = 120_000
+    private val timeoutMs: Int = 120_000,
+    private val numCtx: Int = 4096,
+    private val maxPromptChars: Int = 6_000
 ) {
     fun anfragen(prompt: String): String {
         val url = URL(basisUrl.trimEnd('/') + "/api/generate")
+        val sichererPrompt = begrenzePrompt(prompt, maxPromptChars)
         val koerper = buildString {
             append("{")
             append("\"model\":\"").append(jsonEscape(modell)).append("\",")
-            append("\"prompt\":\"").append(jsonEscape(prompt)).append("\",")
-            append("\"stream\":false")
+            append("\"prompt\":\"").append(jsonEscape(sichererPrompt)).append("\",")
+            append("\"stream\":false,")
+            append("\"options\":{\"num_ctx\":").append(kotlin.math.max(512, numCtx)).append(",\"temperature\":0.2}")
             append("}")
         }
         val verbindung = url.openConnection() as HttpURLConnection
@@ -55,6 +59,17 @@ class OllamaKlient(
     }
 
     companion object {
+        fun begrenzePrompt(prompt: String, maxChars: Int = 6_000): String {
+            if (prompt.length <= maxChars) return prompt
+            val suffix = "... [gekürzt]"
+            val keep = maxChars - suffix.length
+            return if (keep <= 0) {
+                prompt.take(maxChars)
+            } else {
+                prompt.take(keep) + suffix
+            }
+        }
+
         private fun isHexDigit(ch: Char): Boolean = ch.isDigit() || ch.lowercaseChar() in 'a'..'f' || ch.lowercaseChar() in 'A'..'F'
 
         private fun decodeUnicodeHex(json: String, startIndex: Int): Pair<String, Int>? {
