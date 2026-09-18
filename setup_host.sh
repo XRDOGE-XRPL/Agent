@@ -46,11 +46,41 @@ ensure_system_tools() {
   if require_command apt-get; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y --no-install-recommends curl wget unzip ca-certificates git jq openjdk-21-jdk >/dev/null 2>&1 || true
+    apt-get install -y --no-install-recommends curl wget unzip ca-certificates git jq openjdk-21-jdk libstdc++6 zlib1g libc6 >/dev/null 2>&1 || true
   elif require_command pkg; then
     pkg update -y >/dev/null 2>&1 || true
     pkg install -y git curl wget unzip openssl ca-certificates openjdk-21 >/dev/null 2>&1 || true
   fi
+}
+
+resolve_android_aapt2() {
+  local sdk_root="${ANDROID_SDK_ROOT:-/opt/android-sdk}"
+  local candidate candidates=()
+
+  if [ -d "$sdk_root/build-tools" ]; then
+    while IFS= read -r candidate; do
+      candidates+=("$candidate")
+    done < <(find "$sdk_root/build-tools" -path '*/aapt2' -type f 2>/dev/null | sort)
+  fi
+
+  if [ -x "$sdk_root/build-tools/37.0.0/aapt2" ]; then
+    printf '%s\n' "$sdk_root/build-tools/37.0.0/aapt2"
+    return 0
+  fi
+
+  if [ -x "$sdk_root/build-tools/34.0.0/aapt2" ]; then
+    printf '%s\n' "$sdk_root/build-tools/34.0.0/aapt2"
+    return 0
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 ensure_java() {
@@ -186,15 +216,10 @@ PY
 ensure_gradle_hardening() {
   local props_file="$REPO_ROOT/gradle.properties"
   local local_props="$REPO_ROOT/local.properties"
-  local aapt2_override="/opt/android-sdk/build-tools/34.0.0/aapt2"
+  local aapt2_override
 
   mkdir -p "$REPO_ROOT"
-
-  if [ -x "/opt/android-sdk/build-tools/37.0.0/aapt2" ]; then
-    aapt2_override="/opt/android-sdk/build-tools/37.0.0/aapt2"
-  elif [ -x "/opt/android-sdk/build-tools/34.0.0/aapt2" ]; then
-    aapt2_override="/opt/android-sdk/build-tools/34.0.0/aapt2"
-  fi
+  aapt2_override="$(resolve_android_aapt2 || true)"
 
   if [ ! -f "$props_file" ]; then
     touch "$props_file"
@@ -206,10 +231,17 @@ ensure_gradle_hardening() {
     printf '\nandroid.aapt2.daemon.enabled=false\n' >> "$props_file"
   fi
 
-  if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
-    sed -i "s|^android.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2_override|" "$props_file"
+  if [ -n "$aapt2_override" ] && [ -x "$aapt2_override" ]; then
+    if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
+      sed -i "s|^android.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2_override|" "$props_file"
+    else
+      printf "android.aapt2FromMavenOverride=%s\n" "$aapt2_override" >> "$props_file"
+    fi
   else
-    printf "android.aapt2FromMavenOverride=%s\n" "$aapt2_override" >> "$props_file"
+    if grep -q '^android.aapt2FromMavenOverride=' "$props_file"; then
+      sed -i '/^android.aapt2FromMavenOverride=/d' "$props_file"
+    fi
+    log "No valid local aapt2 binary found; leaving Maven AAPT2 fallback unset to avoid broken overrides."
   fi
 
   if ! grep -q '^android.useAndroidX=' "$props_file"; then
@@ -290,11 +322,18 @@ main() {
   export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}"
   export PATH="$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools"
 
+  local aapt2_override
+  aapt2_override="$(resolve_android_aapt2 || true)"
+
   log "Host workspace initialized at $WORKSPACE_DIR"
   log "Required directories: ${REQUIRED_DIRS[*]}"
   log "JAVA_HOME=$JAVA_HOME"
   log "ANDROID_HOME=$ANDROID_HOME"
-  log "Gradle AAPT2 hardening applied for /opt/android-sdk/build-tools/34.0.0/aapt2"
+  if [ -n "$aapt2_override" ] && [ -x "$aapt2_override" ]; then
+    log "Gradle AAPT2 hardening applied for $aapt2_override"
+  else
+    log "Gradle AAPT2 hardening active, but no valid local aapt2 override was found."
+  fi
   log "Gradle and build scripts marked executable."
   log "Next step: cd $REPO_ROOT && ./gradlew clean assembleDebug --no-daemon"
 }
