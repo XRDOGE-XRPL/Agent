@@ -1,12 +1,21 @@
 # Android NDK standalone toolchain for cross-compiling without the AOSP Soong/Make graph.
 # Usage:
 #   cmake -S . -B build-android \
-#     -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/android-standalone.cmake \
+#     -DANDROID_TOOLCHAIN_FILE=/path/to/android.toolchain.cmake \
 #     -DANDROID_ABI=arm64-v8a \
 #     -DANDROID_PLATFORM=android-30
 
-if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT DEFINED _AGENT_ANDROID_TOOLCHAIN_LOADED)
-    set(_AGENT_ANDROID_TOOLCHAIN_LOADED TRUE)
+if(DEFINED _AGENT_ANDROID_TOOLCHAIN_LOADED)
+    return()
+endif()
+set(_AGENT_ANDROID_TOOLCHAIN_LOADED TRUE)
+
+if(NOT DEFINED ANDROID_PLATFORM)
+    set(ANDROID_PLATFORM android-30)
+endif()
+
+if(NOT DEFINED ANDROID_ABI)
+    set(ANDROID_ABI arm64-v8a)
 endif()
 
 if(NOT DEFINED ANDROID_NDK)
@@ -23,23 +32,38 @@ if(NOT DEFINED ANDROID_NDK OR ANDROID_NDK STREQUAL "")
     message(FATAL_ERROR "Android NDK is required. Set ANDROID_NDK or export ANDROID_HOME/ANDROID_SDK_ROOT.")
 endif()
 
-if(NOT EXISTS "${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
-    message(FATAL_ERROR "Android NDK toolchain file not found under ${ANDROID_NDK}")
+if(NOT DEFINED ANDROID_TOOLCHAIN_FILE)
+    set(ANDROID_TOOLCHAIN_FILE "${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
 endif()
+
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT CMAKE_TOOLCHAIN_FILE STREQUAL ANDROID_TOOLCHAIN_FILE)
+    set(ANDROID_TOOLCHAIN_FILE "${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
+if(NOT EXISTS "${ANDROID_TOOLCHAIN_FILE}")
+    message(FATAL_ERROR "Android NDK toolchain file not found: ${ANDROID_TOOLCHAIN_FILE}")
+endif()
+
+if(ANDROID_PLATFORM MATCHES "^android-([0-9]+)$")
+    set(ANDROID_API_LEVEL "${CMAKE_MATCH_1}")
+elseif(ANDROID_PLATFORM MATCHES "^[0-9]+$")
+    set(ANDROID_API_LEVEL "${ANDROID_PLATFORM}")
+else()
+    set(ANDROID_API_LEVEL "30")
+endif()
+
+set(ANDROID_PLATFORM "android-${ANDROID_API_LEVEL}")
 
 set(CMAKE_SYSTEM_NAME Android)
-set(CMAKE_SYSTEM_VERSION "${ANDROID_PLATFORM}")
+set(CMAKE_SYSTEM_VERSION "${ANDROID_API_LEVEL}")
 set(CMAKE_ANDROID_ARCH_ABI "${ANDROID_ABI}")
 set(CMAKE_ANDROID_NDK "${ANDROID_NDK}")
-set(CMAKE_ANDROID_API "${ANDROID_PLATFORM}")
+set(CMAKE_ANDROID_API "${ANDROID_API_LEVEL}")
 set(CMAKE_ANDROID_STL_TYPE c++_static)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-if(NOT DEFINED ANDROID_PLATFORM)
-    set(ANDROID_PLATFORM android-30)
-endif()
-
-if(NOT DEFINED ANDROID_ABI)
-    set(ANDROID_ABI arm64-v8a)
-endif()
-
-include("${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
+include("${ANDROID_TOOLCHAIN_FILE}")

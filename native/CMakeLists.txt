@@ -37,7 +37,7 @@ if(MINGW)
     target_link_libraries(agentkern_static PUBLIC winpthread)
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(agentkern_static PUBLIC pthread)
 endif()
 
