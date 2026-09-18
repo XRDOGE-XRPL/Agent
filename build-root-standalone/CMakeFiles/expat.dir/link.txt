@@ -1,0 +1,2 @@
+/usr/bin/ar qc libexpat.a CMakeFiles/expat.dir/cmake/standalone/empty.cpp.o
+/usr/bin/ranlib libexpat.a

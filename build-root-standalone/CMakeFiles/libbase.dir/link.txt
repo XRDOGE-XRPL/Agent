@@ -1,0 +1,2 @@
+/usr/bin/ar qc liblibbase.a CMakeFiles/libbase.dir/cmake/standalone/empty.cpp.o
+/usr/bin/ranlib liblibbase.a

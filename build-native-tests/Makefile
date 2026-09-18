@@ -65,16 +65,6 @@ CMAKE_BINARY_DIR = /home/runner/work/Agent/Agent/build-native-tests
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target test
-test:
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
-	/usr/local/bin/ctest --force-new-ctest-process $(ARGS)
-.PHONY : test
-
-# Special rule for the target test
-test/fast: test
-.PHONY : test/fast
-
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -151,71 +141,6 @@ agentenlauf: cmake_check_build_system
 agentenlauf/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/agentenlauf.dir/build.make CMakeFiles/agentenlauf.dir/build
 .PHONY : agentenlauf/fast
-
-#=============================================================================
-# Target rules for targets named dateisystem_test
-
-# Build rule for target.
-dateisystem_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dateisystem_test
-.PHONY : dateisystem_test
-
-# fast build rule for target.
-dateisystem_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/dateisystem_test.dir/build.make CMakeFiles/dateisystem_test.dir/build
-.PHONY : dateisystem_test/fast
-
-#=============================================================================
-# Target rules for targets named json_protokoll_test
-
-# Build rule for target.
-json_protokoll_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 json_protokoll_test
-.PHONY : json_protokoll_test
-
-# fast build rule for target.
-json_protokoll_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/json_protokoll_test.dir/build.make CMakeFiles/json_protokoll_test.dir/build
-.PHONY : json_protokoll_test/fast
-
-#=============================================================================
-# Target rules for targets named git_befehl_test
-
-# Build rule for target.
-git_befehl_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 git_befehl_test
-.PHONY : git_befehl_test
-
-# fast build rule for target.
-git_befehl_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/git_befehl_test.dir/build.make CMakeFiles/git_befehl_test.dir/build
-.PHONY : git_befehl_test/fast
-
-#=============================================================================
-# Target rules for targets named http_url_test
-
-# Build rule for target.
-http_url_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 http_url_test
-.PHONY : http_url_test
-
-# fast build rule for target.
-http_url_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/http_url_test.dir/build.make CMakeFiles/http_url_test.dir/build
-.PHONY : http_url_test/fast
-
-#=============================================================================
-# Target rules for targets named schleife_mock_test
-
-# Build rule for target.
-schleife_mock_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 schleife_mock_test
-.PHONY : schleife_mock_test
-
-# fast build rule for target.
-schleife_mock_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/schleife_mock_test.dir/build.make CMakeFiles/schleife_mock_test.dir/build
-.PHONY : schleife_mock_test/fast
 
 cli/haupteinstieg.o: cli/haupteinstieg.cpp.o
 .PHONY : cli/haupteinstieg.o
@@ -457,126 +382,6 @@ src/schleife.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/agentkern_static.dir/build.make CMakeFiles/agentkern_static.dir/src/schleife.cpp.s
 .PHONY : src/schleife.cpp.s
 
-tests/dateisystem_test.o: tests/dateisystem_test.cpp.o
-.PHONY : tests/dateisystem_test.o
-
-# target to build an object file
-tests/dateisystem_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/dateisystem_test.dir/build.make CMakeFiles/dateisystem_test.dir/tests/dateisystem_test.cpp.o
-.PHONY : tests/dateisystem_test.cpp.o
-
-tests/dateisystem_test.i: tests/dateisystem_test.cpp.i
-.PHONY : tests/dateisystem_test.i
-
-# target to preprocess a source file
-tests/dateisystem_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/dateisystem_test.dir/build.make CMakeFiles/dateisystem_test.dir/tests/dateisystem_test.cpp.i
-.PHONY : tests/dateisystem_test.cpp.i
-
-tests/dateisystem_test.s: tests/dateisystem_test.cpp.s
-.PHONY : tests/dateisystem_test.s
-
-# target to generate assembly for a file
-tests/dateisystem_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/dateisystem_test.dir/build.make CMakeFiles/dateisystem_test.dir/tests/dateisystem_test.cpp.s
-.PHONY : tests/dateisystem_test.cpp.s
-
-tests/git_befehl_test.o: tests/git_befehl_test.cpp.o
-.PHONY : tests/git_befehl_test.o
-
-# target to build an object file
-tests/git_befehl_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/git_befehl_test.dir/build.make CMakeFiles/git_befehl_test.dir/tests/git_befehl_test.cpp.o
-.PHONY : tests/git_befehl_test.cpp.o
-
-tests/git_befehl_test.i: tests/git_befehl_test.cpp.i
-.PHONY : tests/git_befehl_test.i
-
-# target to preprocess a source file
-tests/git_befehl_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/git_befehl_test.dir/build.make CMakeFiles/git_befehl_test.dir/tests/git_befehl_test.cpp.i
-.PHONY : tests/git_befehl_test.cpp.i
-
-tests/git_befehl_test.s: tests/git_befehl_test.cpp.s
-.PHONY : tests/git_befehl_test.s
-
-# target to generate assembly for a file
-tests/git_befehl_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/git_befehl_test.dir/build.make CMakeFiles/git_befehl_test.dir/tests/git_befehl_test.cpp.s
-.PHONY : tests/git_befehl_test.cpp.s
-
-tests/http_url_test.o: tests/http_url_test.cpp.o
-.PHONY : tests/http_url_test.o
-
-# target to build an object file
-tests/http_url_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/http_url_test.dir/build.make CMakeFiles/http_url_test.dir/tests/http_url_test.cpp.o
-.PHONY : tests/http_url_test.cpp.o
-
-tests/http_url_test.i: tests/http_url_test.cpp.i
-.PHONY : tests/http_url_test.i
-
-# target to preprocess a source file
-tests/http_url_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/http_url_test.dir/build.make CMakeFiles/http_url_test.dir/tests/http_url_test.cpp.i
-.PHONY : tests/http_url_test.cpp.i
-
-tests/http_url_test.s: tests/http_url_test.cpp.s
-.PHONY : tests/http_url_test.s
-
-# target to generate assembly for a file
-tests/http_url_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/http_url_test.dir/build.make CMakeFiles/http_url_test.dir/tests/http_url_test.cpp.s
-.PHONY : tests/http_url_test.cpp.s
-
-tests/json_protokoll_test.o: tests/json_protokoll_test.cpp.o
-.PHONY : tests/json_protokoll_test.o
-
-# target to build an object file
-tests/json_protokoll_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/json_protokoll_test.dir/build.make CMakeFiles/json_protokoll_test.dir/tests/json_protokoll_test.cpp.o
-.PHONY : tests/json_protokoll_test.cpp.o
-
-tests/json_protokoll_test.i: tests/json_protokoll_test.cpp.i
-.PHONY : tests/json_protokoll_test.i
-
-# target to preprocess a source file
-tests/json_protokoll_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/json_protokoll_test.dir/build.make CMakeFiles/json_protokoll_test.dir/tests/json_protokoll_test.cpp.i
-.PHONY : tests/json_protokoll_test.cpp.i
-
-tests/json_protokoll_test.s: tests/json_protokoll_test.cpp.s
-.PHONY : tests/json_protokoll_test.s
-
-# target to generate assembly for a file
-tests/json_protokoll_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/json_protokoll_test.dir/build.make CMakeFiles/json_protokoll_test.dir/tests/json_protokoll_test.cpp.s
-.PHONY : tests/json_protokoll_test.cpp.s
-
-tests/schleife_mock_test.o: tests/schleife_mock_test.cpp.o
-.PHONY : tests/schleife_mock_test.o
-
-# target to build an object file
-tests/schleife_mock_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/schleife_mock_test.dir/build.make CMakeFiles/schleife_mock_test.dir/tests/schleife_mock_test.cpp.o
-.PHONY : tests/schleife_mock_test.cpp.o
-
-tests/schleife_mock_test.i: tests/schleife_mock_test.cpp.i
-.PHONY : tests/schleife_mock_test.i
-
-# target to preprocess a source file
-tests/schleife_mock_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/schleife_mock_test.dir/build.make CMakeFiles/schleife_mock_test.dir/tests/schleife_mock_test.cpp.i
-.PHONY : tests/schleife_mock_test.cpp.i
-
-tests/schleife_mock_test.s: tests/schleife_mock_test.cpp.s
-.PHONY : tests/schleife_mock_test.s
-
-# target to generate assembly for a file
-tests/schleife_mock_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/schleife_mock_test.dir/build.make CMakeFiles/schleife_mock_test.dir/tests/schleife_mock_test.cpp.s
-.PHONY : tests/schleife_mock_test.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -585,14 +390,8 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... test"
 	@echo "... agentenlauf"
 	@echo "... agentkern_static"
-	@echo "... dateisystem_test"
-	@echo "... git_befehl_test"
-	@echo "... http_url_test"
-	@echo "... json_protokoll_test"
-	@echo "... schleife_mock_test"
 	@echo "... cli/haupteinstieg.o"
 	@echo "... cli/haupteinstieg.i"
 	@echo "... cli/haupteinstieg.s"
@@ -623,21 +422,6 @@ help:
 	@echo "... src/schleife.o"
 	@echo "... src/schleife.i"
 	@echo "... src/schleife.s"
-	@echo "... tests/dateisystem_test.o"
-	@echo "... tests/dateisystem_test.i"
-	@echo "... tests/dateisystem_test.s"
-	@echo "... tests/git_befehl_test.o"
-	@echo "... tests/git_befehl_test.i"
-	@echo "... tests/git_befehl_test.s"
-	@echo "... tests/http_url_test.o"
-	@echo "... tests/http_url_test.i"
-	@echo "... tests/http_url_test.s"
-	@echo "... tests/json_protokoll_test.o"
-	@echo "... tests/json_protokoll_test.i"
-	@echo "... tests/json_protokoll_test.s"
-	@echo "... tests/schleife_mock_test.o"
-	@echo "... tests/schleife_mock_test.i"
-	@echo "... tests/schleife_mock_test.s"
 .PHONY : help
 
 
