@@ -9,7 +9,7 @@ Das Repository ist korrekt für Android Gradle Builds mit:
 - Android SDK unter `/opt/android-sdk`
 - Java 21 / OpenJDK im Proot-Debian-Userland; die Android-App selbst nutzt Java 17 als Gradle-Target
 
-Der eigentliche Fehler ist kein Codefehler in der App, sondern ein Werkzeug-/Umgebungs-Mismatch. Die App darf nicht direkt im Termux-Host gebaut werden, sondern muss in der unterstützten Proot-Debian-Umgebung laufen.
+Der eigentliche Fehler ist kein Codefehler in der App, sondern ein Werkzeug-/Umgebungs-Mismatch. Das Projekt wird im Hybridsetup bevorzugt nativ in Termux gebaut; Proot-Debian dient nur als kompatibler Fallback für isolierte Builds oder Debian-spezifische Hilfsaufgaben.
 
 ## Was im Projekt korrekt ist
 
