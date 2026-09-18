@@ -145,8 +145,11 @@ ensure_host_runtime_libraries() {
 }
 
 if [ -n "${PREFIX:-}" ] && echo "$PREFIX" | grep -qi 'termux'; then
-  echo "Android builds MUST NOT run directly on the Termux host. Use the Proot Debian bootstrap instead:" >&2
-  echo "  python laufwerk/termux_bootstrap.py --bootstrap" >&2
+  if [ -x "$REPO_ROOT/termux_native_setup.sh" ]; then
+    echo "Termux native build path selected; running native Android toolchain setup..." >&2
+    exec "$REPO_ROOT/termux_native_setup.sh" "$@"
+  fi
+  echo "Android builds on Termux must use the native setup path. Run ./termux_native_setup.sh" >&2
   exit 1
 fi
 
