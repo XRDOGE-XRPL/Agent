@@ -73,7 +73,21 @@ Darüber hinaus werden persistente Metadaten und Dokumentationsdateien verwaltet
 
 ## Host-Setup für Termux / Android
 
-Das Repository enthält ein direkt auf dem Android-Host ausführbares Bootstrap-Skript:
+Das Repository unterstützt jetzt ein hybrides Setup:
+
+- Native Termux ist der primäre Build-Host für Java/Gradle/SDK/Cache.
+- Proot-Debian bleibt ein kompatibler Fallback für isolierte bzw. Debian-spezifische Befehle.
+
+Native Termux-Variante:
+
+```bash
+chmod +x termux_native_setup.sh
+./termux_native_setup.sh
+```
+
+Damit wird direkt in Termux ein passendes JDK 21, Android SDK und die Laufzeitvariablen (`JAVA_HOME`, `ANDROID_HOME`) vorbereitet. Anschließend wird der echte Android-Build mit reduzierter Parallelität und stabilen Gradle-Flags gestartet.
+
+Proot-/Debian-Variante:
 
 ```bash
 chmod +x setup_host.sh
@@ -85,13 +99,19 @@ Das Skript erstellt automatisch den kompletten Workspace unter `/werkstatt/` mit
 Für den ARM64-/Android-Build gilt der harte Standard:
 
 ```bash
-./gradlew clean assembleDebug --no-daemon
+./gradlew clean assembleDebug --no-daemon --stacktrace --max-workers=1 \
+  -Dorg.gradle.daemon=false \
+  -Dorg.gradle.parallel=false \
+  -Dorg.gradle.jvmargs='-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false'
 ```
 
 Die `gradle.properties` aktivieren dabei dauerhaft:
 
-- `android.aapt2.daemon.enabled=false`
-- `android.aapt2FromMavenOverride=/opt/android-sdk/build-tools/37.0.0/aapt2` (Fallback auf `34.0.0`, falls nur diese SDK-Version installiert ist)
+- `org.gradle.daemon=false`
+- `org.gradle.parallel=false`
+- `org.gradle.workers.max=1`
+- `org.gradle.jvmargs=-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false`
+- valider `android.aapt2FromMavenOverride` nur, wenn eine echte lokale AAPT2-Binärdatei vorhanden ist
 
 Damit werden Build-Abbrüche in restriktiven ARM64-Umgebungen unterdrückt und das native Lib-Verzeichnis `app/src/main/jniLibs/arm64-v8a` sauber eingebunden.
 

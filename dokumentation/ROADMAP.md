@@ -125,18 +125,18 @@ Die Roadmap bleibt damit auf drei Säulen ausgerichtet: produktive Autonomie, Si
 ## Fazit
 
 Die Roadmap ist darauf ausgerichtet, den Agenten von einem experimentellen Projekt zu einer verlässlichen Entwicklungsplattform zu machen. Die wichtigsten Hebel sind dabei Sicherheit, Kontextqualität, Stabilität und eine klare Benutzeroberfläche auf Android und CLI-Ebene.
-## Proot-Debian-Build (verpflichtend)
+## Hybrides Build-Setup: native Termux + Proot-Fallback
 
-Android- und JNI-Builds dürfen auf dem Termux-Host nicht direkt ausgeführt werden. Der Host nutzt Bionic/Perfetto- und Kernel-Restriktionen, die bei `SIGABRT`/JNI-Abstürzen und Gradle-Lifecycle-Problemen auftreten können. Der robuste und reproduzierbare Weg ist ein isolierter Proot-Debian-Container mit Java 21, Android SDK unter `/opt/android-sdk` und der lokalen Gradle-Ausführung dort.
+Für Android-/Gradle-Builds ist native Termux der primäre Host, weil dort Java 21, Android SDK, Gradle-Caches und temporäre Dateien direkt auf dem nativen Dateisystem laufen und damit den PRoot-/Syscall-Overhead vermeiden. Proot-Debian bleibt als kompatibler Fallback für isolierte Debian-spezifische Aufgaben oder Validierungsprüfungen bestehen.
+
+Empfohlener Standard:
 
 ```bash
-# Beispiel: Android SDK unter /opt/android-sdk
-mkdir -p /opt/android-sdk
-cat > local.properties <<'EOF'
-sdk.dir=/opt/android-sdk
-EOF
-./build_apk.sh
+./termux_native_setup.sh
+# oder direkt in Termux:
+cd /data/data/com.termux/files/home/Agent
+./gradlew clean assembleDebug --no-daemon --stacktrace --max-workers=1   -Dorg.gradle.daemon=false   -Dorg.gradle.parallel=false   -Dorg.gradle.jvmargs='-Xmx1g -Xms256m -Dfile.encoding=UTF-8 -Dcom.android.build.gradle.internal.aapt.Aapt2Daemon=false'
 ```
 
-Das Repository erwartet `sdk.dir=/opt/android-sdk` im Projektstamm. Der direkte Host-Build bleibt in Termux deaktiviert.
+Das Projekt nutzt `JAVA_HOME` und `ANDROID_HOME` aus der nativen Termux-Umgebung und setzt die Gradle-Parameter für ressourcenbeschränkte ARM64-/Proot-Umgebungen automatisch. Proot-Debian wird nur noch für kompatibilitätsorientierte oder isolierte Setup-/Testschritte verwendet.
 

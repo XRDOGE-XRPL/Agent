@@ -435,11 +435,19 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="print compact JSON report")
     parser.add_argument("--quiet", action="store_true", help="reduce console output")
     parser.add_argument("--healthcheck", action="store_true", help="run the status/health validation without changing the environment")
+    parser.add_argument("--native-build", action="store_true", help="run the native Termux build flow directly on Android using JAVA_HOME/ANDROID_HOME and low-resource Gradle settings")
     parser.add_argument("--proot-android-setup", "--proot-android-build", dest="proot_android_build", action="store_true", help="provision the Proot Debian environment and Android SDK toolchain (startup setup only; no project build step)")
     parser.add_argument("--repo-url", default="https://github.com/XRDOGE-XRPL/Agent.git", help="GitHub repository URL to clone into the Proot Debian environment")
     parser.add_argument("--repo-path", default="/root/Agent", help="Target repo path inside the Proot Debian environment")
     parser.add_argument("--sdk-root", default="/opt/android-sdk", help="Android SDK path inside the Proot Debian environment")
     args = parser.parse_args()
+
+    if args.native_build:
+        native_script = Path(__file__).resolve().parent.parent / "termux_native_setup.sh"
+        if not native_script.exists():
+            print(f"[termux-bootstrap] Native setup script not found: {native_script}", file=sys.stderr)
+            return 1
+        return subprocess.run(["bash", str(native_script)], check=False).returncode
 
     if args.proot_android_build:
         report = apply_termux_proot_android_build(repo_url=args.repo_url, repo_path=args.repo_path, sdk_root=args.sdk_root, quiet=args.quiet)
