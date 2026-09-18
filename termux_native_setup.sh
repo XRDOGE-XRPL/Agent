@@ -107,6 +107,32 @@ ensure_host_env() {
   export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 }
 
+guard_against_bad_toolchain_architecture() {
+  case "$ARCH" in
+    aarch64|arm64)
+      local ndk_root="${ANDROID_HOME}/ndk"
+      if [ -d "$ndk_root" ]; then
+        while IFS= read -r mismatch; do
+          if [ -n "$mismatch" ]; then
+            echo "Architektur-Mismatch erkannt: Android NDK verwendet im Host-Setup \"$mismatch\" (linux-x86_64) auf einem ARM64-System." >&2
+            echo "Das führt bei clang++ zu 'Illegal instruction'. Setze das Host-NDK auf das native ARM64-Paket oder verwende den System-Compiler explizit." >&2
+            exit 1
+          fi
+        done < <(find "$ndk_root" -path '*/toolchains/llvm/prebuilt/linux-x86_64' -type d 2>/dev/null)
+      fi
+
+      if [ -n "${CC:-}" ] && printf '%s' "$CC" | grep -Eqi 'qemu-bin|linux-x86_64'; then
+        echo "Stale CC path detected: $CC" >&2
+        unset CC
+      fi
+      if [ -n "${CXX:-}" ] && printf '%s' "$CXX" | grep -Eqi 'qemu-bin|linux-x86_64'; then
+        echo "Stale CXX path detected: $CXX" >&2
+        unset CXX
+      fi
+      ;;
+  esac
+}
+
 ensure_local_properties() {
   local props_file="$REPO_ROOT/local.properties"
   if [ -f "$props_file" ]; then
@@ -213,6 +239,7 @@ main() {
 
   install_termux_packages || true
   ensure_host_env
+  guard_against_bad_toolchain_architecture
   ensure_sdkmanager || true
   ensure_local_properties
   ensure_gradle_hardening

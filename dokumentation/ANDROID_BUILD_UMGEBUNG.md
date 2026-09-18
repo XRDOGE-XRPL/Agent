@@ -56,6 +56,18 @@ Das entspricht nicht dem im Repo vorgesehenen Pfad:
 - `/opt/android-sdk`
 - Java im Proot-Debian-Userland
 
+## Architektur-Guard für ARM64-/PRoot-Umgebungen
+
+Die Projekt-Skripte sollten in ARM64-/PRoot-Umgebungen explizit prüfen, ob ein x86_64-Android-NDK oder ein veralteter `qemu-bin/clang++`-Pfad im System steckt. Wenn das erkannt wird, muss der Build vor dem eigentlichen Kompilieren abgebrochen werden, statt in `Illegal instruction` zu enden.
+
+Das gilt insbesondere für:
+
+- `build_apk.sh`
+- `termux_native_setup.sh`
+- lokale und wiederverwendete CMake-Umgebungen mit alten `CC`/`CXX`-Variablen
+
+Der Guard meldet den konkreten Mismatch mit der Host-Architektur und schlägt den Einsatz eines nativen ARM64-Compilers bzw. eines sauberen System-`clang` vor.
+
 ## Was für diesen Repository-Standard gültig ist
 
 ### 1. Proot-Debian-Umgebung
