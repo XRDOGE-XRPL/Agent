@@ -49,9 +49,4 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/agentkern_static.dir/DependInfo.cmake"
   "CMakeFiles/agentenlauf.dir/DependInfo.cmake"
-  "CMakeFiles/dateisystem_test.dir/DependInfo.cmake"
-  "CMakeFiles/json_protokoll_test.dir/DependInfo.cmake"
-  "CMakeFiles/git_befehl_test.dir/DependInfo.cmake"
-  "CMakeFiles/http_url_test.dir/DependInfo.cmake"
-  "CMakeFiles/schleife_mock_test.dir/DependInfo.cmake"
   )

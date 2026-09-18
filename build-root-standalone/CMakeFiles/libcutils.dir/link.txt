@@ -1,0 +1,2 @@
+/usr/bin/ar qc liblibcutils.a CMakeFiles/libcutils.dir/cmake/standalone/empty.cpp.o
+/usr/bin/ranlib liblibcutils.a

@@ -1,0 +1,11 @@
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/libbase.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/libcutils.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/libutils.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/libziparchive.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/expat.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/edit_cache.dir
+/home/runner/work/Agent/Agent/build-root-standalone/CMakeFiles/rebuild_cache.dir
+/home/runner/work/Agent/Agent/build-root-standalone/native/CMakeFiles/agentkern_static.dir
+/home/runner/work/Agent/Agent/build-root-standalone/native/CMakeFiles/agentenlauf.dir
+/home/runner/work/Agent/Agent/build-root-standalone/native/CMakeFiles/edit_cache.dir
+/home/runner/work/Agent/Agent/build-root-standalone/native/CMakeFiles/rebuild_cache.dir

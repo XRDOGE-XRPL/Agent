@@ -1,0 +1,2 @@
+/usr/bin/ar qc liblibziparchive.a CMakeFiles/libziparchive.dir/cmake/standalone/empty.cpp.o
+/usr/bin/ranlib liblibziparchive.a
