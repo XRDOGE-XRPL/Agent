@@ -65,6 +65,18 @@ if [ -n "${PREFIX:-}" ] && echo "$PREFIX" | grep -qi 'termux'; then
   exit 1
 fi
 
+ensure_host_runtime_libraries() {
+  if command -v apt-get >/dev/null 2>&1; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y --no-install-recommends libstdc++6 zlib1g libc6 >/dev/null 2>&1 || true
+  elif command -v pkg >/dev/null 2>&1; then
+    pkg install -y libstdc++ zlib >/dev/null 2>&1 || true
+  fi
+}
+
+ensure_host_runtime_libraries
+
 ANDROID_HOME=$(resolve_android_home || true)
 if [ -z "$ANDROID_HOME" ]; then
   echo "ANDROID_HOME not found. Set ANDROID_HOME or install the Android SDK under /opt/android-sdk or /usr/local/lib/android/sdk." >&2
